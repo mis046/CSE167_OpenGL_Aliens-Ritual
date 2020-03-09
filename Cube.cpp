@@ -54,12 +54,12 @@ Cube::Cube(GLuint shaderProgram)
     };
 
     vector<std::string> faces;
-    faces.push_back("src/right.jpg");
-    faces.push_back("src/left.jpg");
-    faces.push_back("src/top.jpg");
-    faces.push_back("src/base.jpg");
-    faces.push_back("src/front.jpg");
-    faces.push_back("src/back.jpg");
+    faces.push_back("src/marslike01rt.jpg");
+    faces.push_back("src/marslike01lf.jpg");
+    faces.push_back("src/marslike01up.jpg");
+    faces.push_back("src/marslike01dn.jpg");
+    faces.push_back("src/marslike01ft.jpg");
+    faces.push_back("src/marslike01bk.jpg");
 
     cubemapTexture = loadCubemap(faces);
     
