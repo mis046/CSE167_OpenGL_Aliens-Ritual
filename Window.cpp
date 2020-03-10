@@ -27,7 +27,7 @@ namespace
     GLuint dirLightColorLocPhong;
     GLuint dirLightDirLocPhong;
     glm::vec3 dirColor = glm::vec3(1.0f, 0.3f, 0.0f);
-
+    glm::vec3 dirDir = glm::vec3(100.0f, 100.0f, 100.0f);
 
 	glm::vec3 eye(0, 5, 20); // Camera position.
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
@@ -59,7 +59,7 @@ namespace
 bool Window::initializeProgram()
 {
 	// Create a shader program with a vertex shader and a fragment shader.
-	program = LoadShaders("src/shader.vert", "src/shader.frag");
+	program = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
 
 	// Check the shader program.
@@ -86,7 +86,7 @@ bool Window::initializeProgram()
 
 bool Window::initializeObjects()
 {
-    directionalLight = new DirectionalLight(glm::vec3(-5.0f, 2.0f, 4.0f), dirColor);
+    directionalLight = new DirectionalLight(dirDir, dirColor);
     
 	cube = new Cube(skyboxProgram);
 	// Set cube to be the first to display
@@ -98,13 +98,13 @@ bool Window::initializeObjects()
     robotArmy = new Transform(I);
     
     // Geometries
-    Geometry * bunny = new Geometry("src/bunny.obj", program);
+    Geometry * bunny = new Geometry("src/sphere.obj", program);
     geometries.push_back(bunny);
     Material m;
-    m.ambient = glm::vec3(0.02f, 0.02f, 0.02f);
+    m.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
     m.diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
-    m.specular = glm::vec3(1.0f, 1.0f, 1.0f);
-    m.shininess = 0.8f;
+    m.specular = glm::vec3(0.1f, 0.1f, 0.1f);
+    m.shininess = 2.0f;
     m.color = glm::vec3(1.0, 1.0, 1.0);
     for (Geometry * g : geometries) {
         g->setMaterial(m);
@@ -142,6 +142,7 @@ bool Window::initializeObjects()
         }
     }
     
+    /*
     lines = new Transform(I);
     // Add lines
     vec3 p1(-12, 0, 0);
@@ -197,6 +198,7 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
     for (vec3 v : l5->getPoints())
         linePoints.push_back(v);
+     */
        
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -307,14 +309,14 @@ void Window::idleCallback()
     for (Transform* t : moveR) {
         t->moveR();
     }
-    
-    if (nextP >= linePoints.size()-1) {
-        nextP = 0;
-    }
-    else {
-        nextP ++;
-    }
-    robotArmy->setM(translate(robotArmy->getM(), (linePoints.at(nextP) - robotArmy->getPos())));
+//
+//    if (nextP >= linePoints.size()-1) {
+//        nextP = 0;
+//    }
+//    else {
+//        nextP ++;
+//    }
+//    robotArmy->setM(translate(robotArmy->getM(), (linePoints.at(nextP) - robotArmy->getPos())));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -337,7 +339,7 @@ void Window::displayCallback(GLFWwindow* window)
     
     robotArmy->draw(mat4(1.0f));
     
-    lines->draw(mat4(1.0f));
+//    lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
