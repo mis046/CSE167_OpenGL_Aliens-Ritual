@@ -27,6 +27,9 @@
 #include "Node.hpp"
 #include "Material.h"
 
+#include <unordered_map>
+
+
 using namespace std;
 
 class Geometry : public Node
@@ -150,6 +153,9 @@ public:
         float maxZ = maxX;
         float minZ = minX;
         
+        vector<glm::vec3> temp_normals;
+        unordered_map<unsigned int, unsigned int> vToN;
+
         while (getline(in, str)) {
             istringstream ss(str);
             string start;
@@ -177,21 +183,46 @@ public:
                 for (int i = 0; i < 3; i++) { // Ignoring rgb right now
                     ss >> data[i];
                 }
-                npoints->push_back(glm::vec3(data[0], data[1], data[2]));
+                temp_normals.push_back(glm::vec3(data[0], data[1], data[2]));
             }
             // Read in the connections of faces
             else if (start.compare("f") == 0) {
                 string temp;
                 // For example
-                // f 2728//2728 2729//2729 2730//2730
-                for (int i = 0; i < 3; i ++) {
+                // f 7079/7929/7078 7078/7928/7077 7086/7941/7085 7087/7943/7086
+                // 123 234
+                unsigned int facePoints[4];
+                for (int i = 0; i < 4; i ++) {
                     ss >> temp;
                     const char *c = temp.c_str();
-                    unsigned int val = std::stoi(c, NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
-                    faces->push_back(val);
+                    unsigned int vIndex = std::stoi(c, NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
+                    unsigned long ptr = temp.find("/");
+                    ptr = temp.find("/", ptr + 1);
+                    const char *n = (temp.substr(ptr + 1)).c_str();
+                    unsigned int nIndex = std::stoi(n, NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
+
+                    facePoints[i] = vIndex;
+//                    if (vToN.count(vIndex) == 0)
+                        vToN.insert({vIndex, nIndex});
                 }
+                for (int i = 0; i < 3; i++)
+                    faces->push_back(facePoints[i]);
+                for (int i = 1; i < 4; i++)
+                    faces->push_back(facePoints[i]);
+                faces->push_back(facePoints[2]);
+                faces->push_back(facePoints[3]);
+                faces->push_back(facePoints[0]);
+                faces->push_back(facePoints[3]);
+                faces->push_back(facePoints[0]);
+                faces->push_back(facePoints[1]);
             }
         }
+//        cout << vPoints->size() << "\n";
+//        cout << vToN.size() << "\n";
+        for (int i = 0; i < vPoints->size(); i++) {
+            npoints->push_back(temp_normals[vToN.at(i)]);
+        }
+        
         // Set the center coordinate objCenterVec
         objCenterVec = glm::vec3((maxX + minX) / 2, (maxY + minY) / 2, (maxZ + minZ) / 2);
         

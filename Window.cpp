@@ -27,7 +27,7 @@ namespace
     DirectionalLight* directionalLight;
     GLuint dirLightColorLocPhong;
     GLuint dirLightDirLocPhong;
-    glm::vec3 dirColor = glm::vec3(1.0f, 0.3f, 0.0f);
+    glm::vec3 dirColor = glm::vec3(0.55f, 0.55f, 0.5f);
     glm::vec3 dirDir = glm::vec3(100.0f, 100.0f, 100.0f);
 
 	glm::vec3 eye(0, 5, 20); // Camera position.
@@ -102,11 +102,11 @@ bool Window::initializeObjects()
     Geometry * alien = new Geometry("src/obj_smoothAlien.obj", program);
     geometries.push_back(alien);
     Material m;
-    m.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
-    m.diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
-    m.specular = glm::vec3(0.1f, 0.1f, 0.1f);
-    m.shininess = 2.0f;
-    m.color = glm::vec3(1.0, 1.0, 1.0);
+    m.ambient = glm::vec3(0.05f);
+    m.diffuse = glm::vec3(0.8f);
+    m.specular = glm::vec3(0.2f);
+    m.shininess = 16.0f;
+    m.color = glm::vec3(0.2, 0.7, 0.2);
     for (Geometry * g : geometries) {
         g->setMaterial(m);
     }
@@ -120,13 +120,25 @@ bool Window::initializeObjects()
     robot->addChild(body);
     
     // Army
-    for (int x = -40; x <= 40; x += 20) {
-        for (int z = -40; z <= 40; z += 20) {
-            Transform* clone = new Transform(translate(I, vec3(- x*3.5, 0,  -z*3.5)));
+    
+    for (int x = -230; x <= 230; x += 115) {
+        for (int z = -100; z <= 100; z += 100) {
+            Transform* clone = new Transform(translate(I, vec3(-x, 0,  -z)));
             clone->addChild(robot);
             robotArmy->addChild(clone);
         }
     }
+    
+    /*
+    Transform * clone = new Transform(translate(I, vec3(0, 0, 0)));
+    clone -> addChild(robot);
+    robotArmy->addChild(clone);
+    clone = new Transform(translate(I, vec3(-70, 0, 0)));
+    clone -> addChild(robot);
+    robotArmy->addChild(clone);
+    clone = new Transform(translate(I, vec3(-70, 0, 100)));
+    clone -> addChild(robot);
+    robotArmy->addChild(clone);
     
     /*
     lines = new Transform(I);

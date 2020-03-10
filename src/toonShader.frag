@@ -24,7 +24,7 @@ uniform float material_shininess;
 
 vec3 CalcDirLight(vec3 color, vec3 direction, vec3 normal, vec3 viewDir, vec3 objectColor)
 {
-    float levels = 4;
+    float levels = 3;
 
     vec3 lightDir = normalize(direction);
     // diffuse shading
@@ -36,9 +36,10 @@ vec3 CalcDirLight(vec3 color, vec3 direction, vec3 normal, vec3 viewDir, vec3 ob
     vec3 ambient  = material_ambient;
     vec3 diffuse  = diff * material_diffuse;
     vec3 specular = spec * material_specular;
-    float level = floor(diff * levels)/levels;
+    float diffLevel = floor(diff * levels)/levels;
+    float specLevel = floor(spec * levels)/levels;
 
-    return  (specular + level + ambient) * color * objectColor;
+    return  (specLevel + diffLevel + ambient) * color * objectColor;
 }
 
 void main()
