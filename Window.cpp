@@ -23,8 +23,13 @@ namespace
 
     vector<vec3> linePoints;
 
+    DirectionalLight* directionalLight;
+    GLuint dirLightColorLocPhong;
+    GLuint dirLightDirLocPhong;
+    glm::vec3 dirColor = glm::vec3(1.0f, 0.3f, 0.0f);
+
+
 	glm::vec3 eye(0, 5, 20); // Camera position.
-//	glm::vec3 center(0, 0, 0); // The point we are looking at.
 	glm::vec3 up(0, 1, 0); // The up direction of the camera.
 	float fovy = 60;
 	float near = 1;
@@ -33,11 +38,6 @@ namespace
 	glm::mat4 projection; // Projection matrix.
 
 	GLuint program; // The shader program id.
-	GLuint projectionLoc; // Location of projection in shader.
-	GLuint viewLoc; // Location of view in shader.
-
-    GLuint nodeProjectionLoc;
-    GLuint nodeViewLoc;
 
     GLuint skyboxProgram;
 
@@ -71,22 +71,22 @@ bool Window::initializeProgram()
 
 	// Activate the shader program.
     glUseProgram(program);
-    nodeProjectionLoc = glGetUniformLocation(program, "projection");
-    nodeViewLoc = glGetUniformLocation(program, "view");
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
     
     
 	// Get the locations of uniform variables.
     glUseProgram(skyboxProgram);
-	projectionLoc = glGetUniformLocation(skyboxProgram, "projection");
-	viewLoc = glGetUniformLocation(skyboxProgram, "view");
+
+    // Dir light
+    glUseProgram(program);
 
 	return true;
 }
 
 bool Window::initializeObjects()
 {
+    directionalLight = new DirectionalLight(glm::vec3(-5.0f, 2.0f, 4.0f), dirColor);
     
 	cube = new Cube(skyboxProgram);
 	// Set cube to be the first to display
@@ -98,16 +98,17 @@ bool Window::initializeObjects()
     robotArmy = new Transform(I);
     
     // Geometries
-    Geometry* limbG = new Geometry("src/limb_s.obj", program);
-    geometries.push_back(limbG);
-    Geometry* bodyG = new Geometry("src/body_s.obj", program);
-    geometries.push_back(bodyG);
-    Geometry* headG = new Geometry("src/head_s.obj", program);
-    geometries.push_back(headG);
-    Geometry* antenna = new Geometry("src/antenna_s.obj", program);
-    geometries.push_back(antenna);
-    Geometry* eyeball = new Geometry("src/eyeball_s.obj", program);
-    geometries.push_back(eyeball);
+    Geometry * bunny = new Geometry("src/bunny.obj", program);
+    geometries.push_back(bunny);
+    Material m;
+    m.ambient = glm::vec3(0.02f, 0.02f, 0.02f);
+    m.diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
+    m.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+    m.shininess = 0.8f;
+    m.color = glm::vec3(1.0, 1.0, 1.0);
+    for (Geometry * g : geometries) {
+        g->setMaterial(m);
+    }
     
     // Offsets
     vec3 arm_offset = vec3(1.2, 0.0, 0.0);
@@ -127,42 +128,10 @@ bool Window::initializeObjects()
     // Transformations
     robot = new Transform(I);
     Transform* body = new Transform(I);
-    body->addChild(bodyG);
-    Transform* leftArm = new Transform(glm::rotate(glm::scale(translate(I,-arm_offset), arm_scale), -0.3f, glm::vec3(0.0, 0.0, 1.0)));
-    leftArm->addChild(limbG);
-    Transform* rightArm = new Transform(glm::rotate(glm::scale(translate(I,arm_offset), arm_scale), 0.3f, glm::vec3(0.0, 0.0, 1.0)));
-    rightArm->addChild(limbG);
-    Transform* leftLeg = new Transform(glm::scale(translate(I, left_leg_offset), leg_scale));
-    leftLeg->addChild(limbG);
-    Transform* rightLeg = new Transform(glm::scale(translate(I, right_leg_offset), leg_scale));
-    rightLeg->addChild(limbG);
-    Transform* head = new Transform(glm::scale(translate(I, head_offset), head_scale));
-    head->addChild(headG);
-    Transform* leftA = new Transform(glm::rotate(glm::scale(translate(I,a_l_offset), a_scale), 0.3f, glm::vec3(0.0, 0.0, 1.0)));
-    leftA->addChild(antenna);
-    Transform* rightA = new Transform(glm::rotate(glm::scale(translate(I,a_r_offset), a_scale),-0.3f, glm::vec3(0.0, 0.0, 1.0)));
-    rightA->addChild(antenna);
-    Transform* leftEye = new Transform(glm::scale(translate(I, e_l_offset), e_scale));
-    leftEye->addChild(eyeball);
-    Transform* rightEye = new Transform(glm::scale(translate(I, e_r_offset), e_scale));
-    rightEye->addChild(eyeball);
-    
-    moveL.push_back(leftArm);
-    moveL.push_back(rightLeg);
-    moveR.push_back(rightArm);
-    moveR.push_back(leftLeg);
+    body->addChild(bunny);
     
     // Connect
     robot->addChild(body);
-    robot->addChild(head);
-    robot->addChild(leftArm);
-    robot->addChild(rightArm);
-    robot->addChild(leftLeg);
-    robot->addChild(rightLeg);
-    robot->addChild(leftA);
-    robot->addChild(rightA);
-    robot->addChild(leftEye);
-    robot->addChild(rightEye);
     
     // Army
     for (int x = -2; x <= 2; x ++) {
@@ -243,7 +212,7 @@ void Window::cleanUp()
         delete g;
     
 	delete cube;
-    
+    delete directionalLight;
     delete lines;
 
 	// Delete the shader program.
@@ -354,13 +323,18 @@ void Window::displayCallback(GLFWwindow* window)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glUseProgram(skyboxProgram);
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	skybox->draw();
     
     glUseProgram(program);
-    glUniformMatrix4fv(nodeProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(nodeViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+    glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
+    glUniform3fv(glGetUniformLocation(program, "dirLightDir"), 1, glm::value_ptr(directionalLight->direction));
+
+    glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
+    
     robotArmy->draw(mat4(1.0f));
     
     lines->draw(mat4(1.0f));

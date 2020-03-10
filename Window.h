@@ -24,6 +24,7 @@
 #include "Transform.hpp"
 #include "Geometry.hpp"
 #include "BezierCurve.hpp"
+#include "DirectionalLight.hpp"
 
 class Window
 {
