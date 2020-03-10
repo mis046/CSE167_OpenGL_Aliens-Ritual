@@ -22,7 +22,6 @@
 #include "shader.h"
 #include "Node.hpp"
 #include "Transform.hpp"
-#include "Geometry.hpp"
 #include "BezierCurve.hpp"
 #include "DirectionalLight.hpp"
 
