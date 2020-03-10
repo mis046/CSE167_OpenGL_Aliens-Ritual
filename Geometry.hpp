@@ -164,12 +164,12 @@ public:
                 vPoints->push_back(vecTemp);
                 
                 // update max min
-                maxX = max(vecTemp.x, maxX);
-                minX = min(vecTemp.x, minX);
-                maxY = max(vecTemp.y, maxY);
-                minY = min(vecTemp.y, minY);
-                maxZ = max(vecTemp.z, maxZ);
-                minZ = min(vecTemp.z, minZ);
+                maxX = std::max(vecTemp.x, maxX);
+                minX = std::min(vecTemp.x, minX);
+                maxY = std::max(vecTemp.y, maxY);
+                minY = std::min(vecTemp.y, minY);
+                maxZ = std::max(vecTemp.z, maxZ);
+                minZ = std::min(vecTemp.z, minZ);
             }
             // Load the normal vertices into a different vector
             else if (start.compare("vn") == 0) {
@@ -197,9 +197,9 @@ public:
         
         // Set the scale value to set all objects to same size
         // Points range [-1, 1]
-        float maxCoord = max(max(abs(maxX - objCenterVec.x), abs(minX - objCenterVec.x)),
-                             max(max(abs(maxY - objCenterVec.y), abs(minY - objCenterVec.y)),
-                                 max(abs(maxZ - objCenterVec.z), abs(minZ - objCenterVec.z))));
+        float maxCoord = std::max(std::max(abs(maxX - objCenterVec.x), abs(minX - objCenterVec.x)),
+                             std::max(std::max(abs(maxY - objCenterVec.y), abs(minY - objCenterVec.y)),
+                                 std::max(abs(maxZ - objCenterVec.z), abs(minZ - objCenterVec.z))));
         objScaleVal = 1.0f / maxCoord;
         
         

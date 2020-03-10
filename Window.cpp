@@ -1,4 +1,5 @@
 #include "Window.h"
+#include "Geometry.hpp"
 
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
@@ -98,8 +99,8 @@ bool Window::initializeObjects()
     robotArmy = new Transform(I);
     
     // Geometries
-    Geometry * bunny = new Geometry("src/sphere.obj", program);
-    geometries.push_back(bunny);
+    Geometry * alien = new Geometry("src/obj_smoothAlien.obj", program);
+    geometries.push_back(alien);
     Material m;
     m.ambient = glm::vec3(0.2f, 0.2f, 0.2f);
     m.diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -110,32 +111,17 @@ bool Window::initializeObjects()
         g->setMaterial(m);
     }
     
-    // Offsets
-    vec3 arm_offset = vec3(1.2, 0.0, 0.0);
-    vec3 arm_scale = vec3(1.25);
-    vec3 left_leg_offset = vec3(-0.4, -1.3, 0.0);
-    vec3 right_leg_offset = vec3(0.4, -1.3, 0.0);
-    vec3 leg_scale = vec3(1.5, 1.5, 1.25);
-    vec3 head_offset = vec3(0.0, 1.1, 0.0);
-    vec3 head_scale = vec3(1.1);
-    vec3 a_l_offset = vec3(-0.4, 1.2, 0.0);
-    vec3 a_r_offset = vec3(0.4, 1.2, 0.0);
-    vec3 a_scale = vec3(0.5);
-    vec3 e_l_offset = vec3(-0.4, 1.8, 0.8);
-    vec3 e_r_offset = vec3(0.4, 1.8, 0.8);
-    vec3 e_scale = vec3(2.0);
-    
     // Transformations
     robot = new Transform(I);
     Transform* body = new Transform(I);
-    body->addChild(bunny);
+    body->addChild(alien);
     
     // Connect
     robot->addChild(body);
     
     // Army
-    for (int x = -2; x <= 2; x ++) {
-        for (int z = -2; z <= 2; z++) {
+    for (int x = -40; x <= 40; x += 20) {
+        for (int z = -40; z <= 40; z += 20) {
             Transform* clone = new Transform(translate(I, vec3(- x*3.5, 0,  -z*3.5)));
             clone->addChild(robot);
             robotArmy->addChild(clone);
