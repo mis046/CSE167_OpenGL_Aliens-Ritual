@@ -46,7 +46,14 @@ void main()
     vec3 norm = normalize(normalVec);
     vec3 directionalLight = CalcDirLight(dirLightColor, normalize(dirLightDir), norm, viewDir, objectColor);
 
+    
     vec3 result = directionalLight;
+    
+    // Draw edges
+//    float edge = max(0.0, dot(norm, viewDir));
+//    if (edge < 0.01) {
+//        result = vec3(0.0f);
+//    }
     
     fragColor = vec4(result, 1.0);
 
