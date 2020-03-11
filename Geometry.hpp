@@ -196,14 +196,13 @@ public:
                     ss >> temp;
                     const char *c = temp.c_str();
                     unsigned int vIndex = std::stoi(c, NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
+
                     unsigned long ptr = temp.find("/");
                     ptr = temp.find("/", ptr + 1);
-                    const char *n = (temp.substr(ptr + 1)).c_str();
-                    unsigned int nIndex = std::stoi(n, NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
+                    unsigned int nIndex = std::stoi(temp.substr(ptr + 1), NULL, 0) - 1; // Parse the string, IMPORTANT: 1 indexed!!!
 
                     facePoints[i] = vIndex;
-//                    if (vToN.count(vIndex) == 0)
-                        vToN.insert({vIndex, nIndex});
+					vToN.insert({vIndex, nIndex});
                 }
                 for (int i = 0; i < 3; i++)
                     faces->push_back(facePoints[i]);
@@ -217,6 +216,7 @@ public:
                 faces->push_back(facePoints[1]);
             }
         }
+
 //        cout << vPoints->size() << "\n";
 //        cout << vToN.size() << "\n";
         for (int i = 0; i < vPoints->size(); i++) {
