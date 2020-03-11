@@ -22,11 +22,9 @@ uniform vec3 material_diffuse;
 uniform vec3 material_specular;
 uniform float material_shininess;
 
-vec3 CalcDirLight(vec3 color, vec3 direction, vec3 normal, vec3 viewDir, vec3 objectColor)
+vec3 CalcDirLight(vec3 color, vec3 lightDir, vec3 normal, vec3 viewDir, vec3 objectColor)
 {
     float levels = 3;
-
-    vec3 lightDir = normalize(direction);
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
@@ -46,9 +44,16 @@ void main()
 {
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 norm = normalize(normalVec);
-    vec3 directionalLight = CalcDirLight(dirLightColor, dirLightDir, norm, viewDir, objectColor);
+    vec3 directionalLight = CalcDirLight(dirLightColor, normalize(dirLightDir), norm, viewDir, objectColor);
 
+    
     vec3 result = directionalLight;
+    
+    // Draw edges
+//    float edge = max(0.0, dot(norm, viewDir));
+//    if (edge < 0.01) {
+//        result = vec3(0.0f);
+//    }
     
     fragColor = vec4(result, 1.0);
 

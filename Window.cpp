@@ -103,9 +103,9 @@ bool Window::initializeObjects()
     geometries.push_back(alien);
     Material m;
     m.ambient = glm::vec3(0.05f);
-    m.diffuse = glm::vec3(0.8f);
+    m.diffuse = glm::vec3(1.0f);
     m.specular = glm::vec3(0.2f);
-    m.shininess = 16.0f;
+    m.shininess = 64.0f;
     m.color = glm::vec3(0.2, 0.7, 0.2);
     for (Geometry * g : geometries) {
         g->setMaterial(m);
