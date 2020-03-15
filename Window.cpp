@@ -15,12 +15,15 @@ namespace
     Transform* lines;
 
 	int width, height;
-	std::string windowTitle("GLFW Starter Project");
+	std::string windowTitle("167 Final Project");
 
 	Cube* cube;
     Object* skybox;
     Transform* alien;
     Transform* alienArmy;
+
+    Transform* duck;
+
 
     vector<vec3> linePoints;
 
@@ -97,19 +100,29 @@ bool Window::initializeObjects()
     mat4 I = glm::translate(glm::vec3(0));
     
     alienArmy = new Transform(I);
-    
+    duck = new Transform(I);
+
     // Geometries
     Geometry * alienGeometry = new Geometry("src/obj_smoothAlien.obj", program);
+    Geometry * duckGeometry = new Geometry("src/obj_duck.obj", program);
+
     geometries.push_back(alienGeometry);
-    Material m;
-    m.ambient = glm::vec3(0.05f);
-    m.diffuse = glm::vec3(1.0f);
-    m.specular = glm::vec3(0.2f);
-    m.shininess = 64.0f;
-    m.color = glm::vec3(0.2, 0.7, 0.2);
-    for (Geometry * g : geometries) {
-        g->setMaterial(m);
-    }
+    geometries.push_back(duckGeometry);
+
+    Material alienMaterial;
+    alienMaterial.ambient = glm::vec3(0.05f);
+    alienMaterial.diffuse = glm::vec3(1.0f);
+    alienMaterial.specular = glm::vec3(0.2f);
+    alienMaterial.shininess = 64.0f;
+    alienMaterial.color = glm::vec3(0.2, 0.7, 0.2);
+    alienGeometry->setMaterial(alienMaterial);
+    Material duckMaterial;
+    duckMaterial.ambient = glm::vec3(0.05f);
+    duckMaterial.diffuse = glm::vec3(1.0f);
+    duckMaterial.specular = glm::vec3(0.0f);
+    duckMaterial.shininess = 0.0f;
+    duckMaterial.color = glm::vec3(0.5, 0.5, 0.1);
+    duckGeometry->setMaterial(duckMaterial);
     
     // Transformations
     alien = new Transform(I);
@@ -133,6 +146,12 @@ bool Window::initializeObjects()
     alienArmy->scale(0.03);
     alienArmy->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
 //    alienArmy->moveTo(glm::vec3(500, 0 ,2000));
+    
+    
+    duck->addChild(duckGeometry);
+    duck->scale(0.03);
+    duck->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
+    duck->moveTo(glm::vec3(-100, -400 , 0));
     
     /*
     Transform * clone = new Transform(translate(I, vec3(0, 0, 0)));
@@ -303,22 +322,22 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 void Window::idleCallback()
 {
 	// Perform any updates as necessary. 
-	skybox->update();
+//	skybox->update();
     
-    for (Transform* t : moveL) {
-        t->moveL();
-    }
-    for (Transform* t : moveR) {
-        t->moveR();
-    }
+//    for (Transform* t : moveL) {
+//        t->moveL();
+//    }
+//    for (Transform* t : moveR) {
+//        t->moveR();
+//    }
 
-    if (nextP >= linePoints.size()-1) {
-        nextP = 0;
-    }
-    else {
-        nextP ++;
-    }
-    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
+//    if (nextP >= linePoints.size()-1) {
+//        nextP = 0;
+//    }
+//    else {
+//        nextP ++;
+//    }
+//    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -340,7 +359,8 @@ void Window::displayCallback(GLFWwindow* window)
     glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
     
     alienArmy->draw(mat4(1.0f));
-    
+    duck->draw(mat4(1.0f));
+
     lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
