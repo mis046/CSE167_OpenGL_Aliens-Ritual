@@ -305,17 +305,17 @@ void Window::idleCallback()
 	// Perform any updates as necessary. 
 //	skybox->update();
     
-    
-    for (Transform* t : moveL) {
-        t->moveL();
-    }
-
-    if (nextP >= linePoints.size()-1) {
-        nextP = 0;
-    }
-    else {
-        nextP ++;
-    }
+    // Alien Dancing
+//    for (Transform* t : moveL) {
+//        t->moveL();
+//    }
+//
+//    if (nextP >= linePoints.size()-1) {
+//        nextP = 0;
+//    }
+//    else {
+//        nextP ++;
+//    }
 //    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
