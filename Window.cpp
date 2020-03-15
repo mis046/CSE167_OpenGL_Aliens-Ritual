@@ -10,7 +10,6 @@ namespace
     int nextP = 0;
     vector<Geometry*> geometries;
     vector<Transform*> moveL;
-    vector<Transform*> moveR;
 
     Transform* lines;
 
@@ -21,7 +20,6 @@ namespace
     Object* skybox;
     Transform* alien;
     Transform* alienArmy;
-
     Transform* duck;
 
 
@@ -114,14 +112,14 @@ bool Window::initializeObjects()
     alienMaterial.diffuse = glm::vec3(1.0f);
     alienMaterial.specular = glm::vec3(0.2f);
     alienMaterial.shininess = 64.0f;
-    alienMaterial.color = glm::vec3(0.2, 0.7, 0.2);
+    alienMaterial.color = glm::vec3(0.8, 0.8, 0.8);
     alienGeometry->setMaterial(alienMaterial);
     Material duckMaterial;
     duckMaterial.ambient = glm::vec3(0.05f);
     duckMaterial.diffuse = glm::vec3(1.0f);
     duckMaterial.specular = glm::vec3(0.0f);
-    duckMaterial.shininess = 0.0f;
-    duckMaterial.color = glm::vec3(0.5, 0.5, 0.1);
+    duckMaterial.shininess = 1.0f;
+    duckMaterial.color = glm::vec3(1.0, 1.0, 0.0);
     duckGeometry->setMaterial(duckMaterial);
     
     // Transformations
@@ -129,20 +127,15 @@ bool Window::initializeObjects()
     Transform* body = new Transform(I);
     moveL.push_back(body);
     body->addChild(alienGeometry);
-    
-    // Connect
     alien->addChild(body);
-    
     // Army
-    
-    for (int x = -200; x <= 200; x += 100) {
-        for (int z = -100; z <= 100; z += 100) {
-            Transform* clone = new Transform(translate(I, vec3(-x, 0,  -z)));
+    for (int x = -2; x <= 2; x += 1) {
+        for (int z = -1; z <= 1; z += 1) {
+            Transform* clone = new Transform(translate(I, vec3(100*x, 0,  100*z)));
             clone->addChild(alien);
             alienArmy->addChild(clone);
         }
     }
-    
     alienArmy->scale(0.03);
     alienArmy->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
 //    alienArmy->moveTo(glm::vec3(500, 0 ,2000));
@@ -152,18 +145,6 @@ bool Window::initializeObjects()
     duck->scale(0.03);
     duck->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
     duck->moveTo(glm::vec3(-100, -400 , 0));
-    
-    /*
-    Transform * clone = new Transform(translate(I, vec3(0, 0, 0)));
-    clone -> addChild(alien);
-    alienArmy->addChild(clone);
-    clone = new Transform(translate(I, vec3(-70, 0, 0)));
-    clone -> addChild(alien);
-    alienArmy->addChild(clone);
-    clone = new Transform(translate(I, vec3(-70, 0, 100)));
-    clone -> addChild(alien);
-    alienArmy->addChild(clone);
-     */
     
     lines = new Transform(I);
     // Add lines
@@ -324,19 +305,17 @@ void Window::idleCallback()
 	// Perform any updates as necessary. 
 //	skybox->update();
     
-//    for (Transform* t : moveL) {
-//        t->moveL();
-//    }
-//    for (Transform* t : moveR) {
-//        t->moveR();
-//    }
+    
+    for (Transform* t : moveL) {
+        t->moveL();
+    }
 
-//    if (nextP >= linePoints.size()-1) {
-//        nextP = 0;
-//    }
-//    else {
-//        nextP ++;
-//    }
+    if (nextP >= linePoints.size()-1) {
+        nextP = 0;
+    }
+    else {
+        nextP ++;
+    }
 //    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
@@ -354,14 +333,16 @@ void Window::displayCallback(GLFWwindow* window)
 
     glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
     glUniform3fv(glGetUniformLocation(program, "dirLightDir"), 1, glm::value_ptr(directionalLight->direction));
+    glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, glm::value_ptr(eye));
 
+    
     glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
     
     alienArmy->draw(mat4(1.0f));
     duck->draw(mat4(1.0f));
 
-    lines->draw(mat4(1.0f));
+//    lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();

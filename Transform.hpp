@@ -92,19 +92,6 @@ public:
             moved -= deg;
         }
     }
-    void moveR() {
-        if (moved > 0.8 || moved < - 0.8) {
-            moveF = !moveF;
-        }
-        if (moveF) {
-            M = glm::rotate(M, -deg, glm::vec3(1.0, 0.0, 0.0));
-            moved += deg;
-        }
-        else {
-            M = glm::rotate(M, deg, glm::vec3(1.0, 0.0, 0.0));
-            moved -= deg;
-        }
-    }
     
     glm::mat4 getM() {
         return M;
