@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Geometry.hpp"
+#include "Particle.h"
 
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
@@ -43,6 +44,9 @@ namespace
 
     GLuint skyboxProgram;
 
+    GLuint particleShader;
+    Particle * particle;
+
     bool mouseLeftPressed, mouseRightPressed;
 
     // Rotation
@@ -63,9 +67,10 @@ bool Window::initializeProgram()
 	// Create a shader program with a vertex shader and a fragment shader.
 	program = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
+    particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
 
 	// Check the shader program.
-	if (!program)
+	if (!program || !skyboxProgram || !particleShader)
 	{
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
@@ -88,6 +93,8 @@ bool Window::initializeProgram()
 
 bool Window::initializeObjects()
 {
+    particle = new Particle(2, particleShader);
+    
     directionalLight = new DirectionalLight(dirDir, dirColor);
     
 	cube = new Cube(skyboxProgram);
@@ -219,9 +226,12 @@ void Window::cleanUp()
     delete directionalLight;
     delete lines;
 
+    delete particle;
+    
 	// Delete the shader program.
 	glDeleteProgram(program);
     glDeleteProgram(skyboxProgram);
+    glDeleteProgram(particleShader);
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
@@ -324,24 +334,27 @@ void Window::displayCallback(GLFWwindow* window)
 	// Clear the color and depth buffers.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glUseProgram(skyboxProgram);
-    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-	skybox->draw();
-    
-    glUseProgram(program);
+//    glUseProgram(skyboxProgram);
+//    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+//    glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+//	skybox->draw();
+//
+//    glUseProgram(program);
+//
+//    glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
+//    glUniform3fv(glGetUniformLocation(program, "dirLightDir"), 1, glm::value_ptr(directionalLight->direction));
+//    glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, glm::value_ptr(eye));
+//
+//
+//    glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
+//    glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
+//
+//    alienArmy->draw(mat4(1.0f));
+//    duck->draw(mat4(1.0f));
 
-    glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
-    glUniform3fv(glGetUniformLocation(program, "dirLightDir"), 1, glm::value_ptr(directionalLight->direction));
-    glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, glm::value_ptr(eye));
-
+    // Draw particle
+    particle->draw(projection, view);
     
-    glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
-    
-    alienArmy->draw(mat4(1.0f));
-    duck->draw(mat4(1.0f));
-
 //    lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
