@@ -19,8 +19,8 @@ namespace
 
 	Cube* cube;
     Object* skybox;
-    Transform* robot;
-    Transform* robotArmy;
+    Transform* alien;
+    Transform* alienArmy;
 
     vector<vec3> linePoints;
 
@@ -96,11 +96,11 @@ bool Window::initializeObjects()
    
     mat4 I = glm::translate(glm::vec3(0));
     
-    robotArmy = new Transform(I);
+    alienArmy = new Transform(I);
     
     // Geometries
-    Geometry * alien = new Geometry("src/obj_smoothAlien.obj", program);
-    geometries.push_back(alien);
+    Geometry * alienGeometry = new Geometry("src/obj_smoothAlien.obj", program);
+    geometries.push_back(alienGeometry);
     Material m;
     m.ambient = glm::vec3(0.05f);
     m.diffuse = glm::vec3(1.0f);
@@ -112,48 +112,53 @@ bool Window::initializeObjects()
     }
     
     // Transformations
-    robot = new Transform(I);
+    alien = new Transform(I);
     Transform* body = new Transform(I);
-    body->addChild(alien);
+    moveL.push_back(body);
+    body->addChild(alienGeometry);
     
     // Connect
-    robot->addChild(body);
+    alien->addChild(body);
     
     // Army
     
-    for (int x = -230; x <= 230; x += 115) {
+    for (int x = -200; x <= 200; x += 100) {
         for (int z = -100; z <= 100; z += 100) {
             Transform* clone = new Transform(translate(I, vec3(-x, 0,  -z)));
-            clone->addChild(robot);
-            robotArmy->addChild(clone);
+            clone->addChild(alien);
+            alienArmy->addChild(clone);
         }
     }
     
-    /*
-    Transform * clone = new Transform(translate(I, vec3(0, 0, 0)));
-    clone -> addChild(robot);
-    robotArmy->addChild(clone);
-    clone = new Transform(translate(I, vec3(-70, 0, 0)));
-    clone -> addChild(robot);
-    robotArmy->addChild(clone);
-    clone = new Transform(translate(I, vec3(-70, 0, 100)));
-    clone -> addChild(robot);
-    robotArmy->addChild(clone);
+    alienArmy->scale(0.03);
+    alienArmy->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
+//    alienArmy->moveTo(glm::vec3(500, 0 ,2000));
     
     /*
+    Transform * clone = new Transform(translate(I, vec3(0, 0, 0)));
+    clone -> addChild(alien);
+    alienArmy->addChild(clone);
+    clone = new Transform(translate(I, vec3(-70, 0, 0)));
+    clone -> addChild(alien);
+    alienArmy->addChild(clone);
+    clone = new Transform(translate(I, vec3(-70, 0, 100)));
+    clone -> addChild(alien);
+    alienArmy->addChild(clone);
+     */
+    
     lines = new Transform(I);
     // Add lines
     vec3 p1(-12, 0, 0);
-    vec3 p2(-4, 4, 0);
-    vec3 p3(4, 8, 0);
+    vec3 p2(-4, 0, 0);
+    vec3 p3(4, 0, 0);
     vec3 p4(-4, 0, 0);
-    vec3 p5(-12, -8, 0);
+    vec3 p5(-12, 0, 0);
 
     
     vector<vec3> controlPoints1;
     controlPoints1.push_back(p1);
-    controlPoints1.push_back(vec3(-6, 0, 0));
-    controlPoints1.push_back(vec3(-6, 2, 0));
+    controlPoints1.push_back(vec3(-6, 0, 2));
+    controlPoints1.push_back(vec3(-6, 0, 4));
     controlPoints1.push_back(p2);
     BezierCurve* l1 = new BezierCurve(controlPoints1, program);
     lines->addChild(l1);
@@ -166,15 +171,15 @@ bool Window::initializeObjects()
     lines->addChild(l2);
     vector<vec3> controlPoints3;
     controlPoints3.push_back(p3);
-    controlPoints3.push_back(vec3(2, 6, 2));
-    controlPoints3.push_back(vec3(0, 6, 0));
+    controlPoints3.push_back(vec3(2, 0, 2));
+    controlPoints3.push_back(vec3(0, 0, 1));
     controlPoints3.push_back(p4);
     BezierCurve* l3 = new BezierCurve(controlPoints3, program);
     lines->addChild(l3);
     vector<vec3> controlPoints4;
     controlPoints4.push_back(p4);
-    controlPoints4.push_back(vec3(-8, -6, 1));
-    controlPoints4.push_back(vec3(-6, 6, -5));
+    controlPoints4.push_back(vec3(-8, 0, 1));
+    controlPoints4.push_back(vec3(-6, 0, -5));
     controlPoints4.push_back(p5);
     BezierCurve* l4 = new BezierCurve(controlPoints4, program);
     lines->addChild(l4);
@@ -196,7 +201,6 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
     for (vec3 v : l5->getPoints())
         linePoints.push_back(v);
-     */
        
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -307,14 +311,14 @@ void Window::idleCallback()
     for (Transform* t : moveR) {
         t->moveR();
     }
-//
-//    if (nextP >= linePoints.size()-1) {
-//        nextP = 0;
-//    }
-//    else {
-//        nextP ++;
-//    }
-//    robotArmy->setM(translate(robotArmy->getM(), (linePoints.at(nextP) - robotArmy->getPos())));
+
+    if (nextP >= linePoints.size()-1) {
+        nextP = 0;
+    }
+    else {
+        nextP ++;
+    }
+    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -335,9 +339,9 @@ void Window::displayCallback(GLFWwindow* window)
     glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
     
-    robotArmy->draw(mat4(1.0f));
+    alienArmy->draw(mat4(1.0f));
     
-//    lines->draw(mat4(1.0f));
+    lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -357,8 +361,8 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
         // Uppercase key presses (shift held down + key press)
         if (mods == GLFW_MOD_SHIFT) {
             switch (key) {
-                case GLFW_KEY_S:
-                    robotArmy->scaleUp();
+                case GLFW_KEY_X:
+                    alienArmy->scaleUp();
                     break;
                 default:
                     break;
@@ -371,8 +375,8 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);
                 break;
-            case GLFW_KEY_S:
-                robotArmy->scaleDown();
+            case GLFW_KEY_X:
+                alienArmy->scaleDown();
                 break;
             default:
                 break;
@@ -444,7 +448,7 @@ void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         float rot_angle = velocity * m_ROTSCALE;
         
         glm::mat4 temp = glm::rotate(mat4(1.0f), rot_angle, rotAxis);
-        robotArmy->setM(temp * robotArmy->getM());
+        alienArmy->setM(temp * alienArmy->getM());
     
         lastPoint = curPoint;
         

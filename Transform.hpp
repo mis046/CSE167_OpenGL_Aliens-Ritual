@@ -31,7 +31,7 @@ protected:
     bool moveF = true;
     float moved = 0.0f;
 
-    float deg = 0.008f;
+    float deg = 0.08f;
 public:
     
     // provide a class methods to add a child node (addChild(), removeChild()) to the list
@@ -67,16 +67,28 @@ public:
         
     }
     
+    void moveTo(glm::vec3 point) {
+        M = translate(M, (point - getPos()));
+    }
+    
+    void rotate(glm::vec3 axis, float deg) {
+        M = glm::translate(M, getPos());
+        M = glm::rotate(M, deg, axis);
+        //        scaleFactor *= s;
+        M = glm::translate(M, getPos());
+    }
+    
+    
     void moveL() {
         if (moved > 0.8 || moved < - 0.8) {
             moveF = !moveF;
         }
         if (moveF) {
-            M = glm::rotate(M, deg, glm::vec3(1.0, 0.0, 0.0));
+            M = glm::scale(M, glm::vec3(1.005, 1.0, 1.001));
             moved += deg;
         }
         else {
-            M = glm::rotate(M, -deg, glm::vec3(1.0, 0.0, 0.0));
+            M = glm::scale(M, glm::vec3(1.0/1.005, 1.0, 1.0/1.001));
             moved -= deg;
         }
     }
@@ -115,6 +127,13 @@ public:
     void scaleDown() {
         M = glm::translate(M, getPos());
         M = glm::scale(M, glm::vec3(0.8));
+//        scaleFactor *= s;
+        M = glm::translate(M, getPos());
+    }
+    
+    void scale(float s) {
+        M = glm::translate(M, getPos());
+        M = glm::scale(M, glm::vec3(s));
 //        scaleFactor *= s;
         M = glm::translate(M, getPos());
     }
