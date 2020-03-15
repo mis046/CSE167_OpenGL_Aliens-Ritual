@@ -45,7 +45,8 @@ namespace
     GLuint skyboxProgram;
 
     GLuint particleShader;
-    Particle * particle;
+    vector<Particle*> particles;
+    float particleSize = 0.1;
 
     bool mouseLeftPressed, mouseRightPressed;
 
@@ -91,9 +92,20 @@ bool Window::initializeProgram()
 	return true;
 }
 
+glm::vec3 Window::randV() {
+    return vec3(float(rand() % 200 - 100) / 6000.0, float(rand() % 100) / 1000.0, float(rand() % 200 - 100) / 6000.0);
+}
+
+int Window::randLife() {
+    return rand() % 1000+1000;
+}
+
 bool Window::initializeObjects()
 {
-    particle = new Particle(2, particleShader);
+    for (unsigned int i = 0; i < 100; i++) {
+        // Always up. left/right, up/down, in/out
+        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV()));
+    }
     
     directionalLight = new DirectionalLight(dirDir, dirColor);
     
@@ -226,7 +238,8 @@ void Window::cleanUp()
     delete directionalLight;
     delete lines;
 
-    delete particle;
+    for (Particle * p : particles)
+        delete p;
     
 	// Delete the shader program.
 	glDeleteProgram(program);
@@ -312,6 +325,15 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 
 void Window::idleCallback()
 {
+    for (Particle * p : particles) {
+        p->update();
+        // Check if need to remove it and replace with a new one
+        if (p->lifeLeft <= 0.0) {
+            p->resetPosition();
+            p->velocity = randV();
+            p->lifeLeft = randLife();
+        }
+    }
 	// Perform any updates as necessary. 
 //	skybox->update();
     
@@ -353,7 +375,8 @@ void Window::displayCallback(GLFWwindow* window)
 //    duck->draw(mat4(1.0f));
 
     // Draw particle
-    particle->draw(projection, view);
+    for (Particle * p : particles)
+        p->draw(projection, view);
     
 //    lines->draw(mat4(1.0f));
 

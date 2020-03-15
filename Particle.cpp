@@ -1,7 +1,12 @@
 #include "Particle.h"
 
-Particle::Particle(float size, GLuint shader)
+using namespace glm;
+
+Particle::Particle(float size, GLuint shader, int lifeLeft, vec3 velocity)
 {
+    this->lifeLeft = lifeLeft;
+    this->velocity = velocity;
+    
     this->shader = shader;
 	// Model matrix. Since the original size of the cube is 2, in order to
 	// have a cube of some size, we need to scale the cube by size / 2.
@@ -114,7 +119,16 @@ void Particle::draw(glm::mat4 projection, glm::mat4 view)
 void Particle::update()
 {
 	// Spin the cube by 1 degree.
-	spin(0.1f);
+//	spin(0.1f);
+    lifeLeft -= 1;
+    velocity += vec3(0.0, -gravity, 0.0);
+    model = translate(model, velocity);
+    displacement += velocity;
+}
+
+void Particle::resetPosition() {
+    model = translate(model, -displacement);
+    displacement = vec3(0.0);
 }
 
 void Particle::spin(float deg)

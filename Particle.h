@@ -21,10 +21,19 @@ private:
     GLuint shader;
     glm::mat4 model;
     glm::vec3 color;
+    
+    glm::vec3 displacement;
+    
+    float gravity = 0.0001;
 public:
-	Particle(float size, GLuint shader);
+	Particle(float size, GLuint shader, int lifeLeft, glm::vec3 velocity);
 	~Particle();
+    
+    glm::vec3 velocity;
+    int lifeLeft;
 
+    void resetPosition();
+    
     glm::mat4 getModel() { return model; }
     glm::vec3 getColor() { return color; }
     
