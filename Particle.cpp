@@ -2,16 +2,19 @@
 
 using namespace glm;
 
-Particle::Particle(float size, GLuint shader, int lifeLeft, vec3 velocity)
+Particle::Particle(float size, GLuint shader, int lifeLeft, vec3 velocity, float gravity, vec3 position)
 {
     this->lifeLeft = lifeLeft;
     this->velocity = velocity;
+    this->gravity = gravity;
     
     this->shader = shader;
 	// Model matrix. Since the original size of the cube is 2, in order to
 	// have a cube of some size, we need to scale the cube by size / 2.
+    
 	model = glm::scale(glm::vec3(size / 2.f));
-
+    model = translate(model, position / (size/2.f));
+    
 	// The color of the cube. Try setting it to something else!
 	color = glm::vec3(1.0f, 0.95f, 0.1f);
 

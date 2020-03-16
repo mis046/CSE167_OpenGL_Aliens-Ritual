@@ -24,9 +24,9 @@ private:
     
     glm::vec3 displacement;
     
-    float gravity = 0.0001;
+    float gravity;
 public:
-	Particle(float size, GLuint shader, int lifeLeft, glm::vec3 velocity);
+	Particle(float size, GLuint shader, int lifeLeft, glm::vec3 velocity, float gravity, glm::vec3 position);
 	~Particle();
     
     glm::vec3 velocity;

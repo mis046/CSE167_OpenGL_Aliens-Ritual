@@ -32,6 +32,8 @@ protected:
     float moved = 0.0f;
 
     float deg = 0.08f;
+    
+    float scaled = 1.0f;
 public:
     
     // provide a class methods to add a child node (addChild(), removeChild()) to the list
@@ -68,7 +70,10 @@ public:
     }
     
     void moveTo(glm::vec3 point) {
+        float temp = scaled;
+        scale(1.0f/scaled);
         M = translate(M, (point - getPos()));
+        scale(temp);
     }
     
     void rotate(glm::vec3 axis, float deg) {
@@ -104,21 +109,15 @@ public:
     }
     
     void scaleUp() {
-        M = glm::translate(M, getPos());
-        M = glm::scale(M, glm::vec3(1.25));
-//        scaleFactor *= s;
-        M = glm::translate(M, getPos());
-//        M = glm::scale(glm::vec3(1.1));
+        scale(1.25);
     }
     
     void scaleDown() {
-        M = glm::translate(M, getPos());
-        M = glm::scale(M, glm::vec3(0.8));
-//        scaleFactor *= s;
-        M = glm::translate(M, getPos());
+        scale(0.8);
     }
     
     void scale(float s) {
+        scaled *= s;
         M = glm::translate(M, getPos());
         M = glm::scale(M, glm::vec3(s));
 //        scaleFactor *= s;

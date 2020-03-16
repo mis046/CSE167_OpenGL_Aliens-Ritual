@@ -45,6 +45,7 @@ public:
     
     static glm::vec3 randV();
     static int randLife();
+    static float getWindowSizeScalar();
 };
 
 #endif
