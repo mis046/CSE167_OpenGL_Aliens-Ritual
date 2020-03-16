@@ -8,6 +8,8 @@
  */
 namespace
 {
+    const float cameraSpeed = 0.05f; // adjust accordingly
+
     int nextP = 0;
     vector<Geometry*> geometries;
     vector<Transform*> moveL;
@@ -380,6 +382,21 @@ void Window::displayCallback(GLFWwindow* window)
     
 //    lines->draw(mat4(1.0f));
 
+    glm::vec3 cameraFront = getCameraFront();
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        eye += cameraSpeed * getCameraFront();
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        eye -= cameraSpeed * getCameraFront();
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        eye -= glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
+    }
+
+    view = glm::lookAt(eye, eye + getCameraFront(), up);
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
@@ -408,6 +425,22 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
         else {
             switch (key)
             {
+//            case GLFW_KEY_W:
+//                eye += cameraSpeed * getCameraFront();
+//                view = glm::lookAt(eye, eye + getCameraFront(), up);
+//                break;
+//            case GLFW_KEY_S:
+//                eye -= cameraSpeed * getCameraFront();
+//                view = glm::lookAt(eye, eye + getCameraFront(), up);
+//                break;
+//            case GLFW_KEY_A:
+//                eye -= glm::normalize(glm::cross(getCameraFront(), up)) * cameraSpeed;
+//                view = glm::lookAt(eye, eye + getCameraFront(), up);
+//                break;
+//            case GLFW_KEY_D:
+//                    eye += glm::normalize(glm::cross(getCameraFront(), up)) * cameraSpeed;
+//                view = glm::lookAt(eye, eye + getCameraFront(), up);
+//                break;
             case GLFW_KEY_ESCAPE:
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);
