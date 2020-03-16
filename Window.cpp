@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Geometry.hpp"
+#include "Particle.h"
 
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
@@ -43,6 +44,11 @@ namespace
 
     GLuint skyboxProgram;
 
+    GLuint particleShader;
+    vector<Particle*> particles;
+    float particleSize = 0.1;
+    float gravity = 0.001;
+
     bool mouseLeftPressed, mouseRightPressed;
 
     // Rotation
@@ -63,9 +69,10 @@ bool Window::initializeProgram()
 	// Create a shader program with a vertex shader and a fragment shader.
 	program = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
+    particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
 
 	// Check the shader program.
-	if (!program)
+	if (!program || !skyboxProgram || !particleShader)
 	{
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
@@ -84,6 +91,14 @@ bool Window::initializeProgram()
     glUseProgram(program);
 
 	return true;
+}
+
+glm::vec3 Window::randV() {
+    return 8.0f * vec3(float(rand() % 200 - 100) / 6000.0, float(rand() % 100) / 1000.0, float(rand() % 200 - 100) / 6000.0);
+}
+
+int Window::randLife() {
+    return rand() % 1000+1000;
 }
 
 bool Window::initializeObjects()
@@ -138,13 +153,11 @@ bool Window::initializeObjects()
     }
     alienArmy->scale(0.03);
     alienArmy->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
-//    alienArmy->moveTo(glm::vec3(500, 0 ,2000));
-    
-    
+
     duck->addChild(duckGeometry);
     duck->scale(0.03);
     duck->rotate(glm::vec3(1.0, 0.0, 0.0), -1.55);
-    duck->moveTo(glm::vec3(-100, -400 , 0));
+    duck->moveTo(glm::vec3(-1, -4, -6));
     
     lines = new Transform(I);
     // Add lines
@@ -202,6 +215,12 @@ bool Window::initializeObjects()
     for (vec3 v : l5->getPoints())
         linePoints.push_back(v);
        
+    
+    for (unsigned int i = 0; i < 500; i++) {
+        // Always up. left/right, up/down, in/out
+        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+    }
+    
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
 
@@ -219,9 +238,13 @@ void Window::cleanUp()
     delete directionalLight;
     delete lines;
 
+    for (Particle * p : particles)
+        delete p;
+    
 	// Delete the shader program.
 	glDeleteProgram(program);
     glDeleteProgram(skyboxProgram);
+    glDeleteProgram(particleShader);
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
@@ -302,21 +325,30 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 
 void Window::idleCallback()
 {
+    for (Particle * p : particles) {
+        p->update();
+        // Check if need to remove it and replace with a new one
+        if (p->lifeLeft <= 0.0) {
+            p->resetPosition();
+            p->velocity = randV();
+            p->lifeLeft = randLife();
+        }
+    }
 	// Perform any updates as necessary. 
 //	skybox->update();
     
     // Alien Dancing
-//    for (Transform* t : moveL) {
-//        t->moveL();
-//    }
-//
-//    if (nextP >= linePoints.size()-1) {
-//        nextP = 0;
-//    }
-//    else {
-//        nextP ++;
-//    }
-//    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
+    for (Transform* t : moveL) {
+        t->moveL();
+    }
+
+    if (nextP >= linePoints.size()-1) {
+        nextP = 0;
+    }
+    else {
+        nextP ++;
+    }
+    alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -328,20 +360,24 @@ void Window::displayCallback(GLFWwindow* window)
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	skybox->draw();
-    
+
     glUseProgram(program);
 
     glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
     glUniform3fv(glGetUniformLocation(program, "dirLightDir"), 1, glm::value_ptr(directionalLight->direction));
     glUniform3fv(glGetUniformLocation(program, "viewPos"), 1, glm::value_ptr(eye));
 
-    
+
     glUniformMatrix4fv((glGetUniformLocation(program, "view")), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv((glGetUniformLocation(program, "projection")), 1, GL_FALSE, glm::value_ptr(projection));
-    
+
     alienArmy->draw(mat4(1.0f));
     duck->draw(mat4(1.0f));
 
+    // Draw particle
+    for (Particle * p : particles)
+        p->draw(projection, view);
+    
 //    lines->draw(mat4(1.0f));
 
 	// Gets events, including input such as keyboard and mouse or window resizing.

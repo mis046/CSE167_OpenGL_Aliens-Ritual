@@ -42,6 +42,10 @@ public:
     
     static glm::vec3 getCameraFront();
     static glm::vec3 trackBallMapping(float pointX, float pointY);
+    
+    static glm::vec3 randV();
+    static int randLife();
+    static float getWindowSizeScalar();
 };
 
 #endif
