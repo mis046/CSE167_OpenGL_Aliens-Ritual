@@ -51,7 +51,8 @@ namespace
     float particleSize = 0.1;
     float gravity = 0.001;
 
-    bool mouseLeftPressed, mouseRightPressed;
+    bool mouseLeftPressed;
+    bool mouseRightPressed;
 
     // Rotation
      double pressedX; // Pressed location
@@ -466,7 +467,7 @@ void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int
         else if (action == GLFW_RELEASE)
             mouseLeftPressed = false;
     }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
         if (action == GLFW_PRESS) {
             mouseRightPressed = true;
             pressedX = cursorX;
@@ -486,7 +487,7 @@ void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         float xoffset = xpos - lastX;
         float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
 
-        const float sensitivity = 0.05f;
+        const float sensitivity = 0.2f;
         xoffset *= sensitivity;
         yoffset *= sensitivity;
         
