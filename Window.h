@@ -28,6 +28,11 @@
 class Window
 {
 public:
+    static bool toonShadingOn;
+    static glm::mat4 P;
+    static glm::mat4 V;
+    static glm::vec3 camera_pos;
+
 	static bool initializeProgram();
 	static bool initializeObjects();
 	static void cleanUp();

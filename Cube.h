@@ -30,8 +30,8 @@ public:
 	void update();
 
 	void spin(float deg);
-    unsigned int cubemapTexture;
-    unsigned int loadCubemap(std::vector<std::string> faces);
+    GLuint cubemapTexture;
+    GLuint loadCubemap(std::vector<std::string> faces);
 };
 
 #endif

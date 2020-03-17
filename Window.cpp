@@ -1,14 +1,18 @@
 #include "Window.h"
 #include "Geometry.hpp"
 #include "Particle.h"
+#include "Scenery.h"
 
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
  * declaring global or static variables.
  */
+bool Window::toonShadingOn = true;
+glm::vec3 Window::camera_pos(0, 5 ,20);
+glm::mat4 Window::P;
+glm::mat4 Window::V;
 namespace
 {
-    bool toonShadingOn = true;
     bool particleOn = true;
 
     int particleNumber = 500;
@@ -46,6 +50,7 @@ namespace
 
 	GLuint program; // The shader program id.
     GLuint skyboxProgram;
+    GLuint terrainProgram;
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
@@ -68,6 +73,8 @@ namespace
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
+
+    Scenery* scenery;
 };
 
 bool Window::initializeProgram()
@@ -76,6 +83,7 @@ bool Window::initializeProgram()
     phongShader = LoadShaders("src/phongShader.vert", "src/phongShader.frag");
     toonShader = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
+    terrainProgram = LoadShaders("src/terrain.vert", "src/terrain.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
     program = toonShader;
 
@@ -90,6 +98,7 @@ bool Window::initializeProgram()
     glUseProgram(program);
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
+    V = view;
     
     
 	// Get the locations of uniform variables.
@@ -228,6 +237,8 @@ bool Window::initializeObjects()
         // Always up. left/right, up/down, in/out
         particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
     }
+
+    scenery = new Scenery(4, 4, ((Cube*)skybox)->cubemapTexture);
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -328,8 +339,10 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 	glViewport(0, 0, width, height);
 
 	// Set the projection matrix.
-	projection = glm::perspective(glm::radians(fovy),
-		(float)width / (float)height, near, far);
+	projection = glm::perspective(glm::radians(fovy), (float)width / (float)height, near, far);
+    view = glm::lookAt(eye, eye + getCameraFront(), up);
+    P = projection;
+    V = view;
 }
 
 void Window::idleCallback()
@@ -370,6 +383,9 @@ void Window::displayCallback(GLFWwindow* window)
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	skybox->draw();
 
+    glUseProgram(terrainProgram);
+    scenery->draw_terrain(terrainProgram);
+
     glUseProgram(program);
 
     glUniform3fv(glGetUniformLocation(program, "dirLightColor"), 1, glm::value_ptr(directionalLight->color));
@@ -404,8 +420,10 @@ void Window::displayCallback(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
     }
+    camera_pos = eye;
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
+    V = view;
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
