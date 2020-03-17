@@ -100,19 +100,19 @@ bool Window::initializeProgram()
     // Dir light
     glUseProgram(program);
 
-    
-    // FBO for glowing
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        cerr << "Framebuffer incomplete" << endl;
-        return false;
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+        cout << "Framebuffer complete";
     
     // If you want all rendering operations to have a visual impact again on the main window we need to make the default framebuffer active by binding to 0:
 //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    unsigned int colorBuffers[2];
+    glGenTextures(2, colorBuffers);
     
+    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
     
     
     
