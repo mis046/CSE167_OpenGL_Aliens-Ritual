@@ -111,13 +111,15 @@ bool Window::initializeProgram()
     // generate texture
     for (unsigned int i = 0; i < 2; i++)
     {
-        if (i == 0)
+        if (i == 0) {
             glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
-        else
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        }
+        else {
             glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL
-        );
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        }
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -486,6 +488,12 @@ void Window::displayCallback(GLFWwindow* window)
     glUseProgram(Window::screenShader);
     glBindVertexArray(Window::quadVAO);
     glDisable(GL_DEPTH_TEST);
+    
+    // Draw the normal
+    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+    // Draw the highlightmap
     glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
