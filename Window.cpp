@@ -165,7 +165,25 @@ bool Window::initializeProgram()
     
     // Be sure to unbind the framebuffer to make sure we're not accidentally rendering to the wrong framebuffer.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongBuffer);
+    
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0);
+        // also check if framebuffers are complete (no need for depth buffer)
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
         // positions   // texCoords
@@ -187,24 +205,6 @@ bool Window::initializeProgram()
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-    glGenFramebuffers(2, pingpongFBO);
-    glGenTextures(2, pingpongBuffer);
-    for (unsigned int i = 0; i < 2; i++)
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
-        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL
-        );
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glFramebufferTexture2D(
-            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0
-        );
-    }
     
     glUseProgram(blurShader);
     glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
@@ -347,11 +347,6 @@ bool Window::initializeObjects()
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
 
-    glUseProgram(bloomShaderFinal);
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
-    
-    
 	return true;
 }
 
@@ -379,7 +374,11 @@ void Window::cleanUp()
     glDeleteProgram(bloomShaderFinal);
 
     glDeleteVertexArrays(1, &quadVAO);
-    glDeleteBuffers(1, &quadVBO);
+    glDeleteBuffers(2, pingpongFBO);
+    glDeleteBuffers(1, &framebuffer);
+    glDeleteBuffers(1, &texColorBuffer0);
+    glDeleteBuffers(1, &texColorBuffer1);
+    glDeleteBuffers(2, pingpongBuffer);
     
 }
 
@@ -525,26 +524,43 @@ void Window::renderQuad()
 
 void Window::displayCallback(GLFWwindow* window)
 {
+    
+    glm::vec3 cameraFront = getCameraFront();
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        eye += cameraSpeed * getCameraFront();
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        eye -= cameraSpeed * getCameraFront();
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        eye -= glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
+    }
+
+    view = glm::lookAt(eye, eye + getCameraFront(), up);
+    
 	// Clear the color and depth buffers.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     // first pass
     glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
-    glDrawBuffers(2, attachments);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-    glEnable(GL_DEPTH_TEST);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//    glEnable(GL_DEPTH_TEST);
     
     // RENDER EVERYTHING into framebuffer
-//    glActiveTexture(GL_TEXTURE0);
     render();
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Blur
      bool horizontal = true, first_iteration = true;
      int amount = 10;
      glUseProgram(blurShader);
-     for (unsigned int i = 0; i < 2; i++)
+     for (unsigned int i = 0; i < amount; i++)
      {
          glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
          glUniform1i(glGetUniformLocation(blurShader, "horizontal"), horizontal);
@@ -580,34 +596,19 @@ void Window::displayCallback(GLFWwindow* window)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(bloomShaderFinal);
 
-    //    glBindVertexArray(Window::quadVAO);
-    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+
     glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloom"), bloom);
     glUniform1i(glGetAttribLocation(bloomShaderFinal, "exposure"), exposure);
-    
+
     renderQuad();
     
-//    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
+    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
 
-    glm::vec3 cameraFront = getCameraFront();
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        eye += cameraSpeed * getCameraFront();
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        eye -= cameraSpeed * getCameraFront();
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        eye -= glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
-    }
-
-    view = glm::lookAt(eye, eye + getCameraFront(), up);
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
