@@ -8,6 +8,10 @@
  */
 namespace
 {
+    bool toonShadingOn = true;
+    bool particleOn = true;
+
+    int particleNumber = 500;
     const float cameraSpeed = 0.05f; // adjust accordingly
 
     int nextP = 0;
@@ -219,7 +223,7 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
        
     
-    for (unsigned int i = 0; i < 500; i++) {
+    for (unsigned int i = 0; i < particleNumber; i++) {
         // Always up. left/right, up/down, in/out
         particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
     }
@@ -378,8 +382,10 @@ void Window::displayCallback(GLFWwindow* window)
     duck->draw(mat4(1.0f));
 
     // Draw particle
-    for (Particle * p : particles)
-        p->draw(projection, view);
+    if (particleOn) {
+        for (Particle * p : particles)
+            p->draw(projection, view);
+    }
     
 //    lines->draw(mat4(1.0f));
 
@@ -448,6 +454,26 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 break;
             case GLFW_KEY_X:
                 alienArmy->scaleDown();
+                break;
+            case GLFW_KEY_P:
+                if (particleOn) {
+                    // Delete particles
+                    for (Particle * p : particles) {
+                        delete p;
+                    }
+                    particles.clear();
+                }
+                else {
+                    // Initialize particles
+                    for (unsigned int i = 0; i < particleNumber; i++) {
+                        // Always up. left/right, up/down, in/out
+                        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+                    }
+                }
+                particleOn = !particleOn;
+                break;
+            case GLFW_KEY_T:
+                toonShadingOn = !toonShadingOn;
                 break;
             default:
                 break;
