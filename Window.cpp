@@ -56,6 +56,7 @@ namespace
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
+    GLuint blurShader;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -77,6 +78,10 @@ namespace
     float yawW = -90, pitchW;
 
     unsigned int attachments[2];
+
+    // For blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongBuffer[2];
 };
 
 bool Window::initializeProgram()
@@ -89,7 +94,9 @@ bool Window::initializeProgram()
     program = toonShader;
 
     screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
+    blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
 
+    
 	// Check the shader program.
 	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
 	{
@@ -176,6 +183,27 @@ bool Window::initializeProgram()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongBuffer);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0
+        );
+    }
+    
+    glUseProgram(blurShader);
+    glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
+    
     return true;
 }
 
@@ -332,7 +360,9 @@ void Window::cleanUp()
     glDeleteProgram(toonShader);
     glDeleteProgram(skyboxProgram);
     glDeleteProgram(particleShader);
-    
+    glDeleteProgram(screenShader);
+    glDeleteProgram(blurShader);
+
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteBuffers(1, &quadVBO);
 }
@@ -441,23 +471,12 @@ void Window::idleCallback()
     alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
-void Window::displayCallback(GLFWwindow* window)
-{
-	// Clear the color and depth buffers.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    // first pass
-    glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
-    glDrawBuffers(2, attachments);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-    glEnable(GL_DEPTH_TEST);
-    
-
+void Window::render() {
+    // Render
     glUseProgram(skyboxProgram);
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-	skybox->draw();
+    skybox->draw();
 
     glUseProgram(program);
 
@@ -479,7 +498,48 @@ void Window::displayCallback(GLFWwindow* window)
     }
     
     //    lines->draw(mat4(1.0f));
+}
 
+void Window::renderQuad()
+{
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
+void Window::displayCallback(GLFWwindow* window)
+{
+	// Clear the color and depth buffers.
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // first pass
+    glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
+    glDrawBuffers(2, attachments);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+    glEnable(GL_DEPTH_TEST);
+    
+    // RENDER EVERYTHING into framebuffer
+    render();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Blur
+     bool horizontal = true, first_iteration = true;
+     int amount = 10;
+     glUseProgram(blurShader);
+     for (unsigned int i = 0; i < 2; i++)
+     {
+         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+         glUniform1i(glGetUniformLocation(blurShader, "horizontal"), horizontal);
+         glBindTexture(
+             GL_TEXTURE_2D, first_iteration ? texColorBuffer1 : pingpongBuffer[!horizontal]
+         );
+         renderQuad();
+         horizontal = !horizontal;
+         if (first_iteration)
+             first_iteration = false;
+     }
+    
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -488,15 +548,17 @@ void Window::displayCallback(GLFWwindow* window)
     glUseProgram(Window::screenShader);
     glBindVertexArray(Window::quadVAO);
     glDisable(GL_DEPTH_TEST);
+
     
     // Draw the normal
-    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer0);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    
+//    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer0);
     // Draw the highlightmap
-    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
+//    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
+    // Draw the blur
+    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+    
+    renderQuad();
+    
     glm::vec3 cameraFront = getCameraFront();
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         eye += cameraSpeed * getCameraFront();
