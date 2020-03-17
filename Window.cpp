@@ -49,6 +49,7 @@ namespace
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
+    GLuint screenShader;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -72,6 +73,8 @@ namespace
     GLuint fbo;
     unsigned int texColorBuffer;
     unsigned int rbo;
+    unsigned int quadVAO, quadVBO;
+
 };
 
 bool Window::initializeProgram()
@@ -82,6 +85,8 @@ bool Window::initializeProgram()
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
     program = toonShader;
+
+    screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
 
 	// Check the shader program.
 	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
@@ -116,7 +121,7 @@ bool Window::initializeProgram()
     
     // Complete framebuffer
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-    
+
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
       std::cerr << "Framebuffer Incomplete" << std::endl;
       return false;
@@ -124,6 +129,28 @@ bool Window::initializeProgram()
     
     // Be sure to unbind the framebuffer to make sure we're not accidentally rendering to the wrong framebuffer.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    
+    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+    
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
     return true;
 }
@@ -281,6 +308,9 @@ void Window::cleanUp()
     glDeleteProgram(toonShader);
     glDeleteProgram(skyboxProgram);
     glDeleteProgram(particleShader);
+    
+    glDeleteVertexArrays(1, &quadVAO);
+    glDeleteBuffers(1, &quadVBO);
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
