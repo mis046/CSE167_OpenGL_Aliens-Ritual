@@ -238,7 +238,9 @@ bool Window::initializeObjects()
         particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
     }
 
-    scenery = new Scenery(4, 4, ((Cube*)skybox)->cubemapTexture);
+    cout << "\tREACHED #1 Window" << endl;
+    scenery = new Scenery(2, 2, ((Cube*)skybox)->cubemapTexture);
+    cout << "\tREACHED #2 Window" << endl;
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -420,6 +422,12 @@ void Window::displayCallback(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
     }
+    /*
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        float changeY = GLFW_MOD_SHIFT ? -0.5f : 0.5f;
+        eye += vec3(0.0f, changeY, 0.0f);
+    }
+    */
     camera_pos = eye;
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
@@ -445,6 +453,12 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 case GLFW_KEY_X:
                     alienArmy->scaleUp();
                     break;
+                case GLFW_KEY_SPACE:
+					eye += vec3(0.0f, -10.0f, 0.0f);
+					camera_pos = eye;
+					view = glm::lookAt(eye, eye + getCameraFront(), up);
+					V = view;
+                    break;
                 default:
                     break;
             }
@@ -468,6 +482,12 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 //                    eye += glm::normalize(glm::cross(getCameraFront(), up)) * cameraSpeed;
 //                view = glm::lookAt(eye, eye + getCameraFront(), up);
 //                break;
+			case GLFW_KEY_SPACE:
+				eye += vec3(0.0f, 10.0f, 0.0f);
+				camera_pos = eye;
+				view = glm::lookAt(eye, eye + getCameraFront(), up);
+				V = view;
+				break;
             case GLFW_KEY_ESCAPE:
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);

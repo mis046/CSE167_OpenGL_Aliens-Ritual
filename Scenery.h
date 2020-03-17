@@ -27,8 +27,6 @@ private:
 	int getTerrain(glm::vec3 position);
 	//Water
 	void generateWater();
-	//Particles
-	void generateParticles();
 
 public:
 	//Constructor methods.
@@ -42,8 +40,5 @@ public:
 
 	void draw_terrain(GLuint shaderProgram);
 	void draw_water(GLuint shaderProgram);
-	void draw_particles(GLuint shaderProgram);
-
-	void update_particles();
 };
 #endif

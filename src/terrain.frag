@@ -10,6 +10,7 @@ uniform sampler2D TerrainTexture_1;
 uniform sampler2D TerrainTexture_2;
 uniform sampler2D TerrainTexture_3;
 uniform sampler2D blendMap;
+uniform sampler2D TerrainTexture;
 
 uniform float max_height;
 uniform float min_height;
@@ -39,6 +40,7 @@ void main()
 	vec4 TerrainTexture_3_color = texture(TerrainTexture_3, tiledCoords) * blendMapColor.b;
 	 
 	total_color += TerrainTexture_0_color + TerrainTexture_1_color + TerrainTexture_2_color + TerrainTexture_3_color;
+	total_color = texture(TerrainTexture, tiledCoords);
 
 	//Fake lighting
 	vec3 light_color = vec3(1.0, 0.929, 0.929);

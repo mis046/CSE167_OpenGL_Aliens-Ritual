@@ -47,9 +47,11 @@ void Scenery::generateTerrains()
 		{
 			std::string string_blend = "src/terrain/blend_maps/blend_map_" + std::to_string((width*i) + j + 1) + ".ppm";
 			const char* file_names_blend = string_blend.c_str();
-			std::string string_height = "src/terrain/height_maps/height_map_" + std::to_string((width*i) + j + 1) + ".ppm";
+			//std::string string_height = "src/terrain/height_maps/height_map_" + std::to_string((width*i) + j + 1) + ".ppm";
+			std::string string_height = "src/terrain/height_maps/height_map_20.ppm";
 			const char* file_names_height = string_height.c_str();
-			Terrain * cur_terrain = new Terrain(j, i, "src/terrain/texture_0.ppm", "src/terrain/texture_1.ppm", "src/terrain/texture_2.ppm", "src/terrain/texture_3.ppm", file_names_blend, file_names_height);
+			//Terrain * cur_terrain = new Terrain(j, i, "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", file_names_blend, file_names_height);
+			Terrain * cur_terrain = new Terrain(j, i, "src/marslike01dn.ppm", file_names_height);
 			terrains.push_back(cur_terrain);
 		}
 	}
@@ -78,7 +80,8 @@ void Scenery::stitchTerrains()
 	}
 	for (int x = 0; x < terrains.size(); x++)
 	{
-		terrains[x]->stitch_all();
+		//terrains[x]->stitch_all();
+		cout << "Third: x = " << x << endl;
 	}
 }
 
@@ -94,22 +97,6 @@ void Scenery::generateWater()
 			waters.push_back(cur_water);
 		}
 	}
-}
-
-/* Generate water with width and height. */
-void Scenery::generateParticles()
-{
-	/*
-	//Generate terrains with width and height.
-	for (int i = 0; i < this->height; i++)
-	{
-		for (int j = 0; j < this->width; j++)
-		{
-			Particle * cur_particle = new Particle(j, i);
-			particles.push_back(cur_particle);
-		}
-	}
-	*/
 }
 
 /* Calls draw on all the terrains. */
@@ -128,17 +115,6 @@ void Scenery::draw_water(GLuint shaderProgram)
 	{
 		waters[i]->draw(shaderProgram);
 	}
-}
-
-/* Calls draw on all the particles. */
-void Scenery::draw_particles(GLuint shaderProgram)
-{
-	/*
-	for (int i = 0; i < particles.size(); i++)
-	{
-		particles[i]->draw(shaderProgram);
-	}
-	*/
 }
 
 /* Toggles the draw mode for wireframe mode or fill mode. */
@@ -185,11 +161,3 @@ glm::vec2 Scenery::getBounds()
 	return toReturn;
 }
 
-/* Update the particles for animation. */
-void Scenery::update_particles()
-{
-	for (int i = 0; i < particles.size(); i++)
-	{
-		particles[i]->update();
-	}
-}
