@@ -57,6 +57,7 @@ namespace
     GLuint phongShader;
     GLuint toonShader;
     GLuint blurShader;
+    GLuint bloomShaderFinal;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -82,6 +83,10 @@ namespace
     // For blurring
     unsigned int pingpongFBO[2];
     unsigned int pingpongBuffer[2];
+
+    bool bloom = true;
+    float exposure = 1.0f;
+
 };
 
 bool Window::initializeProgram()
@@ -95,7 +100,7 @@ bool Window::initializeProgram()
 
     screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
     blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
-
+    bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
     
 	// Check the shader program.
 	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
@@ -203,6 +208,10 @@ bool Window::initializeProgram()
     
     glUseProgram(blurShader);
     glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
+    
+    glUseProgram(bloomShaderFinal);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
     
     return true;
 }
@@ -338,6 +347,11 @@ bool Window::initializeObjects()
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
 
+    glUseProgram(bloomShaderFinal);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
+    
+    
 	return true;
 }
 
@@ -362,9 +376,11 @@ void Window::cleanUp()
     glDeleteProgram(particleShader);
     glDeleteProgram(screenShader);
     glDeleteProgram(blurShader);
+    glDeleteProgram(bloomShaderFinal);
 
     glDeleteVertexArrays(1, &quadVAO);
     glDeleteBuffers(1, &quadVBO);
+    
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
@@ -520,6 +536,7 @@ void Window::displayCallback(GLFWwindow* window)
     glEnable(GL_DEPTH_TEST);
     
     // RENDER EVERYTHING into framebuffer
+//    glActiveTexture(GL_TEXTURE0);
     render();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -539,26 +556,43 @@ void Window::displayCallback(GLFWwindow* window)
          if (first_iteration)
              first_iteration = false;
      }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // second pass
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-      
-    glUseProgram(Window::screenShader);
-    glBindVertexArray(Window::quadVAO);
-    glDisable(GL_DEPTH_TEST);
+//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+//    glClear(GL_COLOR_BUFFER_BIT);
+//
+//    glUseProgram(Window::screenShader);
+//    glBindVertexArray(Window::quadVAO);
+//    glDisable(GL_DEPTH_TEST);
 
-    
+    // Testing
     // Draw the normal
 //    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer0);
     // Draw the highlightmap
 //    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
     // Draw the blur
-    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+//    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+//    renderQuad();
+    
+    // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+    // --------------------------------------------------------------------------------------------------------------------------
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUseProgram(bloomShaderFinal);
+
+    //    glBindVertexArray(Window::quadVAO);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloom"), bloom);
+    glUniform1i(glGetAttribLocation(bloomShaderFinal, "exposure"), exposure);
     
     renderQuad();
     
+//    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
+
     glm::vec3 cameraFront = getCameraFront();
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         eye += cameraSpeed * getCameraFront();
@@ -648,6 +682,9 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 else
                     program = toonShader;
                 toonShadingOn = !toonShadingOn;
+                break;
+            case GLFW_KEY_B:
+                bloom = !bloom;
                 break;
             default:
                 break;
