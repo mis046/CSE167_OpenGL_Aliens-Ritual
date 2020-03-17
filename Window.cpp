@@ -33,8 +33,6 @@ namespace
     vector<vec3> linePoints;
 
     DirectionalLight* directionalLight;
-    GLuint dirLightColorLocPhong;
-    GLuint dirLightDirLocPhong;
     glm::vec3 dirColor = glm::vec3(0.55f, 0.55f, 0.5f);
     glm::vec3 dirDir = glm::vec3(100.0f, 100.0f, 100.0f);
 
