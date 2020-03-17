@@ -3,7 +3,8 @@
 #include "Particle.h"
 
 GLuint Window::framebuffer;
-unsigned int Window::texColorBuffer;
+unsigned int Window::texColorBuffer0;
+unsigned int Window::texColorBuffer1;
 unsigned int Window::rbo;
 unsigned int Window::quadVAO, Window::quadVBO;
 GLuint Window::screenShader;
@@ -74,6 +75,8 @@ namespace
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
+
+    unsigned int attachments[2];
 };
 
 bool Window::initializeProgram()
@@ -102,25 +105,45 @@ bool Window::initializeProgram()
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     
-    // generate texture
-    glGenTextures(1, &texColorBuffer);
-    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // attach it to currently bound framebuffer object
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
+    glGenTextures(1, &texColorBuffer0);
+    glGenTextures(1, &texColorBuffer1);
     
+    // generate texture
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        if (i == 0)
+            glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+        else
+            glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach texture to framebuffer
+        if (i == 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer0, 0);
+        else
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, texColorBuffer1, 0);
+//        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+//    glBindTexture(GL_TEXTURE_2D, 0);
+
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+//    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     
     // Complete framebuffer
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
+    // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    attachments[0] = GL_COLOR_ATTACHMENT0;
+    attachments[1] = GL_COLOR_ATTACHMENT1;
+    glDrawBuffers(2, attachments);
+    
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
       std::cerr << "Framebuffer Incomplete" << std::endl;
       return false;
@@ -423,11 +446,12 @@ void Window::displayCallback(GLFWwindow* window)
     
     // first pass
     glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
+    glDrawBuffers(2, attachments);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
     glEnable(GL_DEPTH_TEST);
     
-    
+
     glUseProgram(skyboxProgram);
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -462,7 +486,7 @@ void Window::displayCallback(GLFWwindow* window)
     glUseProgram(Window::screenShader);
     glBindVertexArray(Window::quadVAO);
     glDisable(GL_DEPTH_TEST);
-    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glm::vec3 cameraFront = getCameraFront();
