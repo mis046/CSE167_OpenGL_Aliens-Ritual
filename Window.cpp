@@ -68,6 +68,10 @@ namespace
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
+
+    GLuint fbo;
+    unsigned int texColorBuffer;
+    unsigned int rbo;
 };
 
 bool Window::initializeProgram()
@@ -85,20 +89,43 @@ bool Window::initializeProgram()
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
 	}
-
+    
 	// Activate the shader program.
     glUseProgram(program);
-
     view = glm::lookAt(eye, eye + getCameraFront(), up);
     
+    // FBO
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     
-	// Get the locations of uniform variables.
-    glUseProgram(skyboxProgram);
+    // generate texture
+    glGenTextures(1, &texColorBuffer);
+    glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Dir light
-    glUseProgram(program);
+    // attach it to currently bound framebuffer object
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
     
-	return true;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, height, width);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    
+    // Complete framebuffer
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+    
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      std::cerr << "Framebuffer Incomplete" << std::endl;
+      return false;
+    }
+    
+    // Be sure to unbind the framebuffer to make sure we're not accidentally rendering to the wrong framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    return true;
 }
 
 glm::vec3 Window::randV() {
