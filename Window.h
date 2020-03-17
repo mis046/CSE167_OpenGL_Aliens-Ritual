@@ -46,6 +46,13 @@ public:
     static glm::vec3 randV();
     static int randLife();
     static float getWindowSizeScalar();
+    
+    
+    static GLuint framebuffer;
+    static unsigned int texColorBuffer;
+    static unsigned int rbo;
+    static unsigned int quadVAO, quadVBO;
+    static GLuint screenShader;
 };
 
 #endif

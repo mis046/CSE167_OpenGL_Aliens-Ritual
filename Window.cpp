@@ -2,6 +2,12 @@
 #include "Geometry.hpp"
 #include "Particle.h"
 
+GLuint Window::framebuffer;
+unsigned int Window::texColorBuffer;
+unsigned int Window::rbo;
+unsigned int Window::quadVAO, Window::quadVBO;
+GLuint Window::screenShader;
+
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
  * declaring global or static variables.
@@ -49,7 +55,6 @@ namespace
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
-    GLuint screenShader;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -59,22 +64,16 @@ namespace
     bool mouseRightPressed;
 
     // Rotation
-     double pressedX; // Pressed location
-     double pressedY; // Pressed location
-     glm::vec3 lastPoint;
-     // Cursor position
-     double cursorX;
-     double cursorY;
+    double pressedX; // Pressed location
+    double pressedY; // Pressed location
+    glm::vec3 lastPoint;
+    // Cursor position
+    double cursorX;
+    double cursorY;
 
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
-
-    GLuint fbo;
-    unsigned int texColorBuffer;
-    unsigned int rbo;
-    unsigned int quadVAO, quadVBO;
-
 };
 
 bool Window::initializeProgram()
@@ -100,8 +99,8 @@ bool Window::initializeProgram()
     view = glm::lookAt(eye, eye + getCameraFront(), up);
     
     // FBO
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     
     // generate texture
     glGenTextures(1, &texColorBuffer);

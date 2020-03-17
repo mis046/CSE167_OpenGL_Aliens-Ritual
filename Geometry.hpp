@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 
+#include "Window.h"
 
 using namespace std;
 
@@ -121,6 +122,12 @@ public:
     // have a class method which draws the 3D model associated with this node
     void draw(glm::mat4 C) {
 //        cout << "draw called" << "\n";
+        // first pass
+        glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+        glEnable(GL_DEPTH_TEST);
+        
         this->C = C;
         glUseProgram(*shaderProgram);
         
@@ -135,6 +142,17 @@ public:
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+        
+        // second pass
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+          
+        glUseProgram(Window::screenShader);
+        glBindVertexArray(Window::quadVAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
     }
     
     void update() {
