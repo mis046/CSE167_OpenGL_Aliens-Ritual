@@ -68,6 +68,8 @@ namespace
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
+
+    unsigned int fbo;
 };
 
 bool Window::initializeProgram()
@@ -98,6 +100,15 @@ bool Window::initializeProgram()
     // Dir light
     glUseProgram(program);
 
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+        cout << "Framebuffer complete";
+    
+    // If you want all rendering operations to have a visual impact again on the main window we need to make the default framebuffer active by binding to 0:
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    
 	return true;
 }
 
@@ -254,6 +265,8 @@ void Window::cleanUp()
     glDeleteProgram(toonShader);
     glDeleteProgram(skyboxProgram);
     glDeleteProgram(particleShader);
+    
+    glDeleteFramebuffers(1, &fbo);
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
