@@ -41,7 +41,7 @@ protected:
     // Used to normalize geomoetries
     glm::vec3 objCenterVec;
     float objScaleVal;
-    GLuint shaderProgram;
+    GLuint * shaderProgram;
     vector<vec3> controlPoints;
     vector<vec3> k;
     
@@ -56,14 +56,14 @@ public:
     }
     
     // an initialization method to load a 3D model (OBJ file) whose filename is passed to it (init(string filename). Your OBJ loader from project 2 should work.
-    BezierCurve(vector<vec3> controlPoints, GLuint shaderProgram) {
+    BezierCurve(vector<vec3> controlPoints, GLuint * shaderProgram) {
         this->C = mat4(1.0f);
         this->color = vec3(1.0f);
         
         // Set model
         this->controlPoints = controlPoints;
         this->shaderProgram = shaderProgram;
-        glUseProgram(shaderProgram);
+        glUseProgram(*shaderProgram);
 
         // Calculate the p s
         vec3 p0 = controlPoints.at(0);
@@ -108,9 +108,9 @@ public:
     // have a class method which draws the 3D model associated with this node
     void draw(glm::mat4 C) {
         this->C = C;
-        glUseProgram(shaderProgram);
-        GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLuint colorLoc = glGetUniformLocation(shaderProgram, "color");
+        glUseProgram(*shaderProgram);
+        GLuint modelLoc = glGetUniformLocation(*shaderProgram, "model");
+        GLuint colorLoc = glGetUniformLocation(*shaderProgram, "color");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(this->C));
         glUniform3fv(colorLoc, 1, glm::value_ptr(color));
         

@@ -47,10 +47,11 @@ namespace
 	glm::mat4 projection; // Projection matrix.
 
 	GLuint program; // The shader program id.
-
     GLuint skyboxProgram;
-
     GLuint particleShader;
+    GLuint phongShader;
+    GLuint toonShader;
+
     vector<Particle*> particles;
     float particleSize = 0.1;
     float gravity = 0.001;
@@ -74,12 +75,14 @@ namespace
 bool Window::initializeProgram()
 {
 	// Create a shader program with a vertex shader and a fragment shader.
-	program = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
+    phongShader = LoadShaders("src/phongShader.vert", "src/phongShader.frag");
+    toonShader = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
+    program = toonShader;
 
 	// Check the shader program.
-	if (!program || !skyboxProgram || !particleShader)
+	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
 	{
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
@@ -123,8 +126,8 @@ bool Window::initializeObjects()
     duck = new Transform(I);
 
     // Geometries
-    Geometry * alienGeometry = new Geometry("src/obj_smoothAlien.obj", program);
-    Geometry * duckGeometry = new Geometry("src/obj_duck.obj", program);
+    Geometry * alienGeometry = new Geometry("src/obj_smoothAlien.obj", &program);
+    Geometry * duckGeometry = new Geometry("src/obj_duck.obj", &program);
 
     geometries.push_back(alienGeometry);
     geometries.push_back(duckGeometry);
@@ -180,35 +183,35 @@ bool Window::initializeObjects()
     controlPoints1.push_back(vec3(-6, 0, 2));
     controlPoints1.push_back(vec3(-6, 0, 4));
     controlPoints1.push_back(p2);
-    BezierCurve* l1 = new BezierCurve(controlPoints1, program);
+    BezierCurve* l1 = new BezierCurve(controlPoints1, &program);
     lines->addChild(l1);
     vector<vec3> controlPoints2;
     controlPoints2.push_back(p2);
     controlPoints2.push_back(vec3(-2, 0, -2));
     controlPoints2.push_back(vec3(2, 0, 5));
     controlPoints2.push_back(p3);
-    BezierCurve* l2 = new BezierCurve(controlPoints2, program);
+    BezierCurve* l2 = new BezierCurve(controlPoints2, &program);
     lines->addChild(l2);
     vector<vec3> controlPoints3;
     controlPoints3.push_back(p3);
     controlPoints3.push_back(vec3(2, 0, 2));
     controlPoints3.push_back(vec3(0, 0, 1));
     controlPoints3.push_back(p4);
-    BezierCurve* l3 = new BezierCurve(controlPoints3, program);
+    BezierCurve* l3 = new BezierCurve(controlPoints3, &program);
     lines->addChild(l3);
     vector<vec3> controlPoints4;
     controlPoints4.push_back(p4);
     controlPoints4.push_back(vec3(-8, 0, 1));
     controlPoints4.push_back(vec3(-6, 0, -5));
     controlPoints4.push_back(p5);
-    BezierCurve* l4 = new BezierCurve(controlPoints4, program);
+    BezierCurve* l4 = new BezierCurve(controlPoints4, &program);
     lines->addChild(l4);
     vector<vec3> controlPoints5;
     controlPoints5.push_back(p5);
     controlPoints5.push_back(vec3(5, 0, 1));
     controlPoints5.push_back(vec3(1, 0, 5));
     controlPoints5.push_back(p1);
-    BezierCurve* l5 = new BezierCurve(controlPoints5, program);
+    BezierCurve* l5 = new BezierCurve(controlPoints5, &program);
     lines->addChild(l5);
     
     for (vec3 v : l1->getPoints())
@@ -249,7 +252,8 @@ void Window::cleanUp()
         delete p;
     
 	// Delete the shader program.
-	glDeleteProgram(program);
+	glDeleteProgram(phongShader);
+    glDeleteProgram(toonShader);
     glDeleteProgram(skyboxProgram);
     glDeleteProgram(particleShader);
 }
@@ -473,6 +477,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 particleOn = !particleOn;
                 break;
             case GLFW_KEY_T:
+                if (toonShadingOn)
+                    program = phongShader;
+                else
+                    program = toonShader;
                 toonShadingOn = !toonShadingOn;
                 break;
             default:

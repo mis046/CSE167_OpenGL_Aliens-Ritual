@@ -43,7 +43,7 @@ protected:
     // Used to normalize geomoetries
     glm::vec3 objCenterVec;
     float objScaleVal;
-    GLuint shaderProgram;
+    GLuint * shaderProgram;
     
     
 public:
@@ -63,10 +63,10 @@ public:
     }
     
     // an initialization method to load a 3D model (OBJ file) whose filename is passed to it (init(string filename). Your OBJ loader from project 2 should work.
-    Geometry(std::string filename, GLuint shaderProgram) {
+    Geometry(std::string filename, GLuint * shaderProgram) {
         // Set model
         this->shaderProgram = shaderProgram;
-        glUseProgram(shaderProgram);
+        glUseProgram(*shaderProgram);
 
         C = glm::mat4(1.0f); // Initialize
         readPointsFromFile(filename, &points, &npoints, &faces);
@@ -122,16 +122,16 @@ public:
     void draw(glm::mat4 C) {
 //        cout << "draw called" << "\n";
         this->C = C;
-        glUseProgram(shaderProgram);
+        glUseProgram(*shaderProgram);
         
         // Pass in the material
-        glUniform3fv(glGetUniformLocation(shaderProgram, "material_ambient"), 1, glm::value_ptr(material.ambient));
-        glUniform3fv(glGetUniformLocation(shaderProgram, "material_diffuse"), 1, glm::value_ptr(material.diffuse));
-        glUniform3fv(glGetUniformLocation(shaderProgram, "material_specular"), 1, glm::value_ptr(material.specular));
-        glUniform1f(glGetUniformLocation(shaderProgram, "material_shininess"), material.shininess);
-        glUniform3fv(glGetUniformLocation(shaderProgram, "objectColor"), 1, glm::value_ptr(material.color));
+        glUniform3fv(glGetUniformLocation(*shaderProgram, "material_ambient"), 1, glm::value_ptr(material.ambient));
+        glUniform3fv(glGetUniformLocation(*shaderProgram, "material_diffuse"), 1, glm::value_ptr(material.diffuse));
+        glUniform3fv(glGetUniformLocation(*shaderProgram, "material_specular"), 1, glm::value_ptr(material.specular));
+        glUniform1f(glGetUniformLocation(*shaderProgram, "material_shininess"), material.shininess);
+        glUniform3fv(glGetUniformLocation(*shaderProgram, "objectColor"), 1, glm::value_ptr(material.color));
         
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(this->C));
+        glUniformMatrix4fv(glGetUniformLocation(*shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(this->C));
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
