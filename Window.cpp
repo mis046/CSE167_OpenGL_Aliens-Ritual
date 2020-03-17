@@ -115,7 +115,7 @@ bool Window::initializeProgram()
     
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, height, width);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     
     // Complete framebuffer
@@ -421,6 +421,13 @@ void Window::displayCallback(GLFWwindow* window)
 	// Clear the color and depth buffers.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
+    // first pass
+    glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+    glEnable(GL_DEPTH_TEST);
+    
+    
     glUseProgram(skyboxProgram);
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -445,7 +452,18 @@ void Window::displayCallback(GLFWwindow* window)
             p->draw(projection, view);
     }
     
-//    lines->draw(mat4(1.0f));
+    //    lines->draw(mat4(1.0f));
+
+    // second pass
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+      
+    glUseProgram(Window::screenShader);
+    glBindVertexArray(Window::quadVAO);
+    glDisable(GL_DEPTH_TEST);
+    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glm::vec3 cameraFront = getCameraFront();
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
