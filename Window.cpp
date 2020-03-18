@@ -607,7 +607,7 @@ void Window::displayCallback(GLFWwindow* window)
 
     renderQuad();
     
-    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
+//    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
