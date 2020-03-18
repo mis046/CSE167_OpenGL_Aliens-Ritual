@@ -51,6 +51,7 @@ namespace
     GLuint toonShader;
     GLuint blurShader;
     GLuint bloomShaderFinal;
+//    GLuint bloomOffShaderFinal
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -83,7 +84,7 @@ namespace
     unsigned int quadVAO, quadVBO;
     GLuint screenShader;
 
-    bool bloom = true;
+    bool bloomOn = true;
 };
 
 bool Window::initializeProgram()
@@ -102,6 +103,8 @@ bool Window::initializeProgram()
     screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
     blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
     bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
+//    bloomOffShaderFinal = LoadShaders("src/bloomOffFinal.vert", "src/bloomOffFinal.frag");
+
     
 	// Check the shader program.
 	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader || !blurShader || !bloomShaderFinal)
@@ -578,10 +581,15 @@ void Window::displayCallback(GLFWwindow* window)
     render();
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+    
     // Blur
      bool horizontal = true, first_iteration = true;
-     int amount = 20;
+     
+    
+     int amount = 1;
+    
+    if (bloomOn) amount = 10;
+    
      glUseProgram(blurShader);
      for (unsigned int i = 0; i < amount; i++)
      {
@@ -598,21 +606,22 @@ void Window::displayCallback(GLFWwindow* window)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // second pass
-//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-//    glClear(GL_COLOR_BUFFER_BIT);
-//
-//    glUseProgram(screenShader);
-//    glBindVertexArray(quadVAO);
-//    glDisable(GL_DEPTH_TEST);
+    //    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    //    glClear(GL_COLOR_BUFFER_BIT);
+    //
+    //    glUseProgram(screenShader);
+    //    glBindVertexArray(quadVAO);
+    //    glDisable(GL_DEPTH_TEST);
 
     // Testing
     // Draw the normal
-//    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+    //    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
     // Draw the highlightmap
-//    glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
+    //    glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
     // Draw the blur
-//    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
-//    renderQuad();
+    //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+    //    renderQuad();
+    
     
     // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
     // --------------------------------------------------------------------------------------------------------------------------
@@ -715,7 +724,7 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 toonShadingOn = !toonShadingOn;
                 break;
             case GLFW_KEY_B:
-                bloom = !bloom;
+                bloomOn = !bloomOn;
                 break;
             default:
                 break;
