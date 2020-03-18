@@ -11,7 +11,7 @@ namespace
     bool toonShadingOn = true;
     bool particleOn = true;
 
-    int particleNumber = 500;
+    int particleNumber = 200;
     const float cameraSpeed = 0.05f; // adjust accordingly
 
     int nextP = 0;
@@ -49,6 +49,9 @@ namespace
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
+    GLuint blurShader;
+    GLuint bloomShaderFinal;
+GLuint bloomOffShaderFinal;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -58,16 +61,31 @@ namespace
     bool mouseRightPressed;
 
     // Rotation
-     double pressedX; // Pressed location
-     double pressedY; // Pressed location
-     glm::vec3 lastPoint;
-     // Cursor position
-     double cursorX;
-     double cursorY;
+    double pressedX; // Pressed location
+    double pressedY; // Pressed location
+    glm::vec3 lastPoint;
+    // Cursor position
+    double cursorX;
+    double cursorY;
 
     // Used for turning the camera
     float lastX, lastY;
     float yawW = -90, pitchW;
+
+    unsigned int attachments[2];
+
+    // For blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongBuffer[2];
+    GLuint framebuffer;
+    unsigned int texColorBuffer0;
+    unsigned int texColorBuffer1;
+    unsigned int rbo;
+    unsigned int quadVAO, quadVBO;
+    GLuint screenShader;
+
+    bool bloomOn = true;
+    bool showOffScreen = false;
 };
 
 bool Window::initializeProgram()
@@ -77,28 +95,113 @@ bool Window::initializeProgram()
     toonShader = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
-    program = toonShader;
+    
+    if (toonShadingOn)
+        program = toonShader;
+    else
+        program = phongShader;
+    
+    screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
+    blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
+    bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
+    bloomOffShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomOffFinal.frag");
 
+//    bloomOffShaderFinal = LoadShaders("src/bloomOffFinal.vert", "src/bloomOffFinal.frag");
+
+    
 	// Check the shader program.
-	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
+	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader || !blurShader || !bloomShaderFinal)
 	{
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
 	}
-
+    
 	// Activate the shader program.
     glUseProgram(program);
-
     view = glm::lookAt(eye, eye + getCameraFront(), up);
     
+    // FBO
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     
-	// Get the locations of uniform variables.
-    glUseProgram(skyboxProgram);
+    glGenTextures(1, &texColorBuffer0);
+    glGenTextures(1, &texColorBuffer1);
+    
+    // generate texture
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        if (i == 0) {
+            glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        }
+        else {
+            glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        }
 
-    // Dir light
-    glUseProgram(program);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach texture to framebuffer
+        if (i == 0)
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer0, 0);
+        else
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, texColorBuffer1, 0);
+//        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+//    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+//    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     
-	return true;
+    // Complete framebuffer
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    // tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+    attachments[0] = GL_COLOR_ATTACHMENT0;
+    attachments[1] = GL_COLOR_ATTACHMENT1;
+    glDrawBuffers(2, attachments);
+    
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      std::cerr << "Framebuffer Incomplete" << std::endl;
+      return false;
+    }
+    
+    // Be sure to unbind the framebuffer to make sure we're not accidentally rendering to the wrong framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongBuffer);
+    
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // we clamp to the edge as the blur filter would otherwise sample repeated texture values!
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0);
+        // also check if framebuffers are complete (no need for depth buffer)
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cout << "Framebuffer not complete!" << std::endl;
+            return false;
+        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    glUseProgram(blurShader);
+    glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
+    
+    glUseProgram(bloomShaderFinal);
+//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
+//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
+//
+    return true;
 }
 
 glm::vec3 Window::randV() {
@@ -106,7 +209,7 @@ glm::vec3 Window::randV() {
 }
 
 int Window::randLife() {
-    return rand() % 1000+1000;
+    return rand() % 1000+500;
 }
 
 bool Window::initializeObjects()
@@ -224,10 +327,10 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
        
     
-    for (unsigned int i = 0; i < particleNumber; i++) {
-        // Always up. left/right, up/down, in/out
-        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
-    }
+//    for (unsigned int i = 0; i < particleNumber; i++) {
+//        // Always up. left/right, up/down, in/out
+//        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+//    }
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -254,6 +357,17 @@ void Window::cleanUp()
     glDeleteProgram(toonShader);
     glDeleteProgram(skyboxProgram);
     glDeleteProgram(particleShader);
+    glDeleteProgram(screenShader);
+    glDeleteProgram(blurShader);
+    glDeleteProgram(bloomShaderFinal);
+
+    glDeleteVertexArrays(1, &quadVAO);
+    glDeleteBuffers(2, pingpongFBO);
+    glDeleteBuffers(1, &framebuffer);
+    glDeleteBuffers(1, &texColorBuffer0);
+    glDeleteBuffers(1, &texColorBuffer1);
+    glDeleteBuffers(2, pingpongBuffer);
+    
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
@@ -334,6 +448,9 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 
 void Window::idleCallback()
 {
+    if (particles.size() < particleNumber) {
+        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+    }
     for (Particle * p : particles) {
         p->update();
         // Check if need to remove it and replace with a new one
@@ -360,15 +477,12 @@ void Window::idleCallback()
     alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
 }
 
-void Window::displayCallback(GLFWwindow* window)
-{
-	// Clear the color and depth buffers.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+void Window::render() {
+    // Render
     glUseProgram(skyboxProgram);
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-	skybox->draw();
+    skybox->draw();
 
     glUseProgram(program);
 
@@ -389,8 +503,39 @@ void Window::displayCallback(GLFWwindow* window)
             p->draw(projection, view);
     }
     
-//    lines->draw(mat4(1.0f));
+    //    lines->draw(mat4(1.0f));
+}
 
+void Window::renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
+}
+
+void Window::displayCallback(GLFWwindow* window)
+{
+    
     glm::vec3 cameraFront = getCameraFront();
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         eye += cameraSpeed * getCameraFront();
@@ -406,6 +551,94 @@ void Window::displayCallback(GLFWwindow* window)
     }
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
+    
+	// Clear the color and depth buffers.
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // first pass
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//    glEnable(GL_DEPTH_TEST);
+    
+    // RENDER EVERYTHING into framebuffer
+    render();
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    // Blur
+     bool horizontal = true, first_iteration = true;
+     
+    
+     int amount = 1;
+    
+     if (bloomOn) amount = 10;
+    
+     glUseProgram(blurShader);
+     for (unsigned int i = 0; i < amount; i++)
+     {
+         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+         glUniform1i(glGetUniformLocation(blurShader, "horizontal"), horizontal);
+         glBindTexture(
+             GL_TEXTURE_2D, first_iteration ? texColorBuffer1 : pingpongBuffer[!horizontal]
+         );
+         renderQuad();
+         horizontal = !horizontal;
+         if (first_iteration)
+             first_iteration = false;
+     }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    
+    // second pass
+    if (showOffScreen) {
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(screenShader);
+        glBindVertexArray(quadVAO);
+        glDisable(GL_DEPTH_TEST);
+
+        // Testing
+        // Draw the normal
+        //    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+        // Draw the highlightmap
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
+        // Draw the blur
+        //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+            renderQuad();
+    }
+    
+    else {
+        // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+        // --------------------------------------------------------------------------------------------------------------------------
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        if (bloomOn)
+            glUseProgram(bloomShaderFinal);
+        else
+            glUseProgram(bloomOffShaderFinal);
+        
+        GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
+        GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
+        glUniform1i(t1Location, 0);
+        glUniform1i(t2Location, 1);
+
+        glActiveTexture(GL_TEXTURE0);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+
+        glActiveTexture(GL_TEXTURE0);
+        
+        renderQuad();
+    }
+    
+    
+//    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
+
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
@@ -480,6 +713,12 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 else
                     program = toonShader;
                 toonShadingOn = !toonShadingOn;
+                break;
+            case GLFW_KEY_B:
+                bloomOn = !bloomOn;
+                break;
+            case GLFW_KEY_O:
+                showOffScreen = !showOffScreen;
                 break;
             default:
                 break;
