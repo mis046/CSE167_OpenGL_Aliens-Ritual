@@ -85,6 +85,7 @@ namespace
     GLuint screenShader;
 
     bool bloomOn = true;
+    bool showOffScreen = false;
 };
 
 bool Window::initializeProgram()
@@ -570,7 +571,7 @@ void Window::displayCallback(GLFWwindow* window)
     
      int amount = 1;
     
-    if (bloomOn) amount = 10;
+     if (bloomOn) amount = 10;
     
      glUseProgram(blurShader);
      for (unsigned int i = 0; i < amount; i++)
@@ -588,44 +589,47 @@ void Window::displayCallback(GLFWwindow* window)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // second pass
-    //    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    //    glClear(GL_COLOR_BUFFER_BIT);
-    //
-    //    glUseProgram(screenShader);
-    //    glBindVertexArray(quadVAO);
-    //    glDisable(GL_DEPTH_TEST);
+    if (showOffScreen) {
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    // Testing
-    // Draw the normal
-    //    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
-    // Draw the highlightmap
-    //    glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
-    // Draw the blur
-    //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
-    //    renderQuad();
+        glUseProgram(screenShader);
+        glBindVertexArray(quadVAO);
+        glDisable(GL_DEPTH_TEST);
+
+        // Testing
+        // Draw the normal
+        //    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+        // Draw the highlightmap
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
+        // Draw the blur
+        //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
+            renderQuad();
+    }
     
-    
-    // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
-    // --------------------------------------------------------------------------------------------------------------------------
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glUseProgram(bloomShaderFinal);
+    else {
+        // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+        // --------------------------------------------------------------------------------------------------------------------------
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(bloomShaderFinal);
 
-    GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
-    GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
-    glUniform1i(t1Location, 0);
-    glUniform1i(t2Location, 1);
+        GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
+        GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
+        glUniform1i(t1Location, 0);
+        glUniform1i(t2Location, 1);
 
-    glActiveTexture(GL_TEXTURE0);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
+        glActiveTexture(GL_TEXTURE0);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
 
-    glActiveTexture(GL_TEXTURE1);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+        glActiveTexture(GL_TEXTURE1);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
 
-    glActiveTexture(GL_TEXTURE0);
-    
-    renderQuad();
+        glActiveTexture(GL_TEXTURE0);
+        
+        renderQuad();
+    }
     
     
 //    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
@@ -707,6 +711,9 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 break;
             case GLFW_KEY_B:
                 bloomOn = !bloomOn;
+                break;
+            case GLFW_KEY_O:
+                showOffScreen = !showOffScreen;
                 break;
             default:
                 break;
