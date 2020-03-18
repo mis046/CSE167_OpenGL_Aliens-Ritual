@@ -751,6 +751,7 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 scenery->updateTerrainHeights();
 				glUseProgram(terrainProgram);
 				scenery->draw_terrain(terrainProgram);
+                break;
             case GLFW_KEY_B:
                 bloomOn = !bloomOn;
                 break;
