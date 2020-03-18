@@ -23,7 +23,7 @@ void main()
     
     // check whether fragment output is higher than threshold, if so output as brightness color
     float brightness = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-    brightColor = fragColor * brightness * 1.5;
+    brightColor = fragColor * brightness;
 
 //    if(brightness > 0.3)
 //        brightColor = vec4(fragColor.rgb, 1.0);

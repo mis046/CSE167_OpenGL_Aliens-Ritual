@@ -51,7 +51,7 @@ namespace
     GLuint toonShader;
     GLuint blurShader;
     GLuint bloomShaderFinal;
-//    GLuint bloomOffShaderFinal
+GLuint bloomOffShaderFinal;
 
     vector<Particle*> particles;
     float particleSize = 0.1;
@@ -104,6 +104,8 @@ bool Window::initializeProgram()
     screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
     blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
     bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
+    bloomOffShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomOffFinal.frag");
+
 //    bloomOffShaderFinal = LoadShaders("src/bloomOffFinal.vert", "src/bloomOffFinal.frag");
 
     
@@ -611,8 +613,11 @@ void Window::displayCallback(GLFWwindow* window)
         // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
         // --------------------------------------------------------------------------------------------------------------------------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(bloomShaderFinal);
-
+        if (bloomOn)
+            glUseProgram(bloomShaderFinal);
+        else
+            glUseProgram(bloomOffShaderFinal);
+        
         GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
         GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
         glUniform1i(t1Location, 0);
