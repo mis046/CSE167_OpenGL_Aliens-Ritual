@@ -507,8 +507,6 @@ void Terrain::draw(GLuint shaderProgram)
 
 	//Set it back to fill.
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	glEnable(GL_FOG);
 }
 
 /* Update the shader with new updated vertices. */
