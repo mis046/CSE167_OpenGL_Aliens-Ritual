@@ -620,8 +620,16 @@ void Window::displayCallback(GLFWwindow* window)
         
         GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
         GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
+        glUniform1i(t1Location, 1);
+        glUniform1i(t2Location, 0);
+#ifdef __APPLE__
         glUniform1i(t1Location, 0);
         glUniform1i(t2Location, 1);
+#endif
+#ifdef _WIN32
+        glUniform1i(t1Location, 1);
+        glUniform1i(t2Location, 0);
+#endif
 
         glActiveTexture(GL_TEXTURE0);
         glEnable(GL_TEXTURE_2D);
