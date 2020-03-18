@@ -657,8 +657,8 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
         // Uppercase key presses (shift held down + key press)
         if (mods == GLFW_MOD_SHIFT) {
             switch (key) {
-                case GLFW_KEY_X:
-                    alienArmy->scaleUp();
+//                case GLFW_KEY_X:
+//                    alienArmy->scaleUp();
                     break;
                 default:
                     break;
@@ -667,29 +667,13 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
         else {
             switch (key)
             {
-//            case GLFW_KEY_W:
-//                eye += cameraSpeed * getCameraFront();
-//                view = glm::lookAt(eye, eye + getCameraFront(), up);
-//                break;
-//            case GLFW_KEY_S:
-//                eye -= cameraSpeed * getCameraFront();
-//                view = glm::lookAt(eye, eye + getCameraFront(), up);
-//                break;
-//            case GLFW_KEY_A:
-//                eye -= glm::normalize(glm::cross(getCameraFront(), up)) * cameraSpeed;
-//                view = glm::lookAt(eye, eye + getCameraFront(), up);
-//                break;
-//            case GLFW_KEY_D:
-//                    eye += glm::normalize(glm::cross(getCameraFront(), up)) * cameraSpeed;
-//                view = glm::lookAt(eye, eye + getCameraFront(), up);
-//                break;
             case GLFW_KEY_ESCAPE:
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);
                 break;
-            case GLFW_KEY_X:
-                alienArmy->scaleDown();
-                break;
+//            case GLFW_KEY_X:
+//                alienArmy->scaleDown();
+//                break;
             case GLFW_KEY_P:
                 if (particleOn) {
                     // Delete particles
@@ -738,16 +722,17 @@ void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int
         else if (action == GLFW_RELEASE)
             mouseLeftPressed = false;
     }
-     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-        if (action == GLFW_PRESS) {
-            mouseRightPressed = true;
-            pressedX = cursorX;
-            pressedY = cursorY;
-            lastPoint = trackBallMapping(pressedX, pressedY);
-        }
-        else if (action == GLFW_RELEASE)
-            mouseRightPressed = false;
-    }
+    // Disable right click
+//     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+//        if (action == GLFW_PRESS) {
+//            mouseRightPressed = true;
+//            pressedX = cursorX;
+//            pressedY = cursorY;
+//            lastPoint = trackBallMapping(pressedX, pressedY);
+//        }
+//        else if (action == GLFW_RELEASE)
+//            mouseRightPressed = false;
+//    }
 }
 
 void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
