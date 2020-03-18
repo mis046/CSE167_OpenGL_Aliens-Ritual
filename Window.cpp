@@ -82,9 +82,8 @@ namespace
     unsigned int rbo;
     unsigned int quadVAO, quadVBO;
     GLuint screenShader;
-    bool bloom = true;
-    float exposure = 1.0f;
 
+    bool bloom = true;
 };
 
 bool Window::initializeProgram()
@@ -582,7 +581,7 @@ void Window::displayCallback(GLFWwindow* window)
 
     // Blur
      bool horizontal = true, first_iteration = true;
-     int amount = 4;
+     int amount = 20;
      glUseProgram(blurShader);
      for (unsigned int i = 0; i < amount; i++)
      {
@@ -619,6 +618,7 @@ void Window::displayCallback(GLFWwindow* window)
     // --------------------------------------------------------------------------------------------------------------------------
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(bloomShaderFinal);
+
     GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
     GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
     glUniform1i(t1Location, 0);
@@ -634,8 +634,6 @@ void Window::displayCallback(GLFWwindow* window)
 
     glActiveTexture(GL_TEXTURE0);
     
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloom"), bloom);
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "exposure"), exposure);
     renderQuad();
     
     
