@@ -1,19 +1,14 @@
 #version 330 core
 
-//The vertex shader gets called once per vertex.
-
-//Define position, normal, and texture defined in the Container.
 layout (location = 0) in vec3 vertex;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 texCoords;
 
-//Define uniform MVP: model, view, projection passed from the object.
 uniform mat4 MVP;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-//Define any out variables for the fragment shader.
 out vec3 FragPos;
 out vec3 FragNormal;
 out vec2 FragTexCoords;

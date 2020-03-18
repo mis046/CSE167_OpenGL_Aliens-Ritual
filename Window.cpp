@@ -337,16 +337,8 @@ bool Window::initializeObjects()
     for (vec3 v : l5->getPoints())
         linePoints.push_back(v);
        
-    
-
     scenery = new Scenery(1, 1, ((Cube*)skybox)->cubemapTexture);
 
-//    for (unsigned int i = 0; i < particleNumber; i++) {
-//        // Always up. left/right, up/down, in/out
-//        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
-//    }
-
-    
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
 
@@ -492,6 +484,7 @@ void Window::idleCallback()
         nextP ++;
     }
     alienArmy->setM(translate(alienArmy->getM(), (linePoints.at(nextP) - alienArmy->getPos())));
+    scenery->draw_terrain(terrainProgram);
 }
 
 void Window::render() {
@@ -748,9 +741,13 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 toonShadingOn = !toonShadingOn;
                 break;
             case GLFW_KEY_H:
+                /*
                 scenery->updateTerrainHeights();
 				glUseProgram(terrainProgram);
 				scenery->draw_terrain(terrainProgram);
+                */
+				glUseProgram(terrainProgram);
+                scenery->generateTerrains();
                 break;
             case GLFW_KEY_B:
                 bloomOn = !bloomOn;
@@ -856,8 +853,6 @@ glm::vec3 Window::trackBallMapping(float pointX, float pointY) {
     float realWidth = width / 2.0f;
     float realHeight = height / 2.0f;
     
-//    cout << "width " << realWidth << " height " << realHeight << "\n";
-//    cout << "pointX " << pointX << " pointY " << pointY << "\n";
     
     glm::vec3 v;
     float d;
@@ -865,10 +860,8 @@ glm::vec3 Window::trackBallMapping(float pointX, float pointY) {
     v.y = (realHeight - 2.0f*pointY) / realHeight;
     v.z = 0.0;
     d = length(v);
-//    cout << "distance " << d << "\n";
     d = (d<1.0) ? d : 1.0;
     v.z = sqrtf(1.001 - d*d);
     normalize(v); // Still need to normalize, since we only capped d, not v.
-//    cout << "x " << v.x << " y " << v.y << " z " << v.z <<  "\n";
     return v;
 }
