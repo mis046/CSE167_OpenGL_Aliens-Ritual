@@ -48,13 +48,6 @@ public:
     static float getWindowSizeScalar();
     static void render();
     static void renderQuad();
-    
-    static GLuint framebuffer;
-    static unsigned int texColorBuffer0;
-    static unsigned int texColorBuffer1;
-    static unsigned int rbo;
-    static unsigned int quadVAO, quadVBO;
-    static GLuint screenShader;
 };
 
 #endif

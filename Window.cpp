@@ -2,20 +2,13 @@
 #include "Geometry.hpp"
 #include "Particle.h"
 
-GLuint Window::framebuffer;
-unsigned int Window::texColorBuffer0;
-unsigned int Window::texColorBuffer1;
-unsigned int Window::rbo;
-unsigned int Window::quadVAO, Window::quadVBO;
-GLuint Window::screenShader;
-
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
  * declaring global or static variables.
  */
 namespace
 {
-    bool toonShadingOn = true;
+    bool toonShadingOn = false;
     bool particleOn = true;
 
     int particleNumber = 500;
@@ -83,7 +76,12 @@ namespace
     // For blurring
     unsigned int pingpongFBO[2];
     unsigned int pingpongBuffer[2];
-
+    GLuint framebuffer;
+    unsigned int texColorBuffer0;
+    unsigned int texColorBuffer1;
+    unsigned int rbo;
+    unsigned int quadVAO, quadVBO;
+    GLuint screenShader;
     bool bloom = true;
     float exposure = 1.0f;
 
@@ -96,14 +94,18 @@ bool Window::initializeProgram()
     toonShader = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
-    program = toonShader;
-
+    
+    if (toonShadingOn)
+        program = toonShader;
+    else
+        program = phongShader;
+    
     screenShader = LoadShaders("src/screen.vert", "src/screen.frag");
     blurShader = LoadShaders("src/blur.vert", "src/blur.frag");
     bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
     
 	// Check the shader program.
-	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader)
+	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader || !blurShader || !bloomShaderFinal)
 	{
 		std::cerr << "Failed to initialize shader program" << std::endl;
 		return false;
@@ -180,39 +182,41 @@ bool Window::initializeProgram()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0);
         // also check if framebuffers are complete (no need for depth buffer)
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             std::cout << "Framebuffer not complete!" << std::endl;
+            return false;
+        }
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
-    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
-        // positions   // texCoords
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-    
-    glGenVertexArrays(1, &quadVAO);
-    glGenBuffers(1, &quadVBO);
-    glBindVertexArray(quadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-    
+//    float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+//        // positions   // texCoords
+//        -1.0f,  1.0f,  0.0f, 1.0f,
+//        -1.0f, -1.0f,  0.0f, 0.0f,
+//         1.0f, -1.0f,  1.0f, 0.0f,
+//
+//        -1.0f,  1.0f,  0.0f, 1.0f,
+//         1.0f, -1.0f,  1.0f, 0.0f,
+//         1.0f,  1.0f,  1.0f, 1.0f
+//    };
+//
+//    glGenVertexArrays(1, &quadVAO);
+//    glGenBuffers(1, &quadVBO);
+//    glBindVertexArray(quadVAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+//    glEnableVertexAttribArray(1);
+//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+//
     glUseProgram(blurShader);
     glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
     
     glUseProgram(bloomShaderFinal);
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
-    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
-    
+//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
+//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
+//
     return true;
 }
 
@@ -517,8 +521,28 @@ void Window::render() {
 
 void Window::renderQuad()
 {
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+            // positions        // texture Coords
+            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
     glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
 }
 
@@ -546,7 +570,7 @@ void Window::displayCallback(GLFWwindow* window)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     // first pass
-    glBindFramebuffer(GL_FRAMEBUFFER, Window::framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 //    glEnable(GL_DEPTH_TEST);
@@ -558,7 +582,7 @@ void Window::displayCallback(GLFWwindow* window)
 
     // Blur
      bool horizontal = true, first_iteration = true;
-     int amount = 10;
+     int amount = 4;
      glUseProgram(blurShader);
      for (unsigned int i = 0; i < amount; i++)
      {
@@ -578,15 +602,15 @@ void Window::displayCallback(GLFWwindow* window)
 //    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 //    glClear(GL_COLOR_BUFFER_BIT);
 //
-//    glUseProgram(Window::screenShader);
-//    glBindVertexArray(Window::quadVAO);
+//    glUseProgram(screenShader);
+//    glBindVertexArray(quadVAO);
 //    glDisable(GL_DEPTH_TEST);
 
     // Testing
     // Draw the normal
-//    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer0);
+//    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
     // Draw the highlightmap
-//    glBindTexture(GL_TEXTURE_2D, Window::texColorBuffer1);
+//    glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
     // Draw the blur
 //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
 //    renderQuad();
@@ -595,17 +619,25 @@ void Window::displayCallback(GLFWwindow* window)
     // --------------------------------------------------------------------------------------------------------------------------
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(bloomShaderFinal);
+    GLuint t1Location = glGetUniformLocation(bloomShaderFinal, "scene");
+    GLuint t2Location = glGetUniformLocation(bloomShaderFinal, "bloomBlur");
+    glUniform1i(t1Location, 0);
+    glUniform1i(t2Location, 1);
 
     glActiveTexture(GL_TEXTURE0);
+    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
 
     glActiveTexture(GL_TEXTURE1);
+    glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
 
+    glActiveTexture(GL_TEXTURE0);
+    
     glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloom"), bloom);
     glUniform1i(glGetAttribLocation(bloomShaderFinal, "exposure"), exposure);
-
     renderQuad();
+    
     
 //    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
 
