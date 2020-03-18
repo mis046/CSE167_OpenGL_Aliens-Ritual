@@ -519,6 +519,8 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 break;
             case GLFW_KEY_H:
                 scenery->updateTerrainHeights();
+				glUseProgram(terrainProgram);
+				scenery->draw_terrain(terrainProgram);
                 break;
             default:
                 break;

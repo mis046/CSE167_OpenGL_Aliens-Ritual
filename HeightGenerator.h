@@ -8,7 +8,7 @@
 class HeightGenerator
 {
 private:
-	int seed;
+	static int seed;
 	int xOffset;
 	int zOffset;
 public:

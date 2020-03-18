@@ -3,11 +3,12 @@
 #define PI 3.1415926535
 #define AMPLITUDE 75.0
 #define OCTAVES 3
-#define ROUGHNESS 0.3
+#define ROUGHNESS 0.1
 
+int HeightGenerator::seed;
 HeightGenerator::HeightGenerator(int seed)
 {
-	this->seed = seed;
+	HeightGenerator::seed = seed;
 	srand(seed);
 	this->xOffset = 0;
 	this->zOffset = 0;
@@ -15,7 +16,7 @@ HeightGenerator::HeightGenerator(int seed)
 
 HeightGenerator::HeightGenerator(int gridX, int gridZ, int vertexCount, int seed)
 {
-	this->seed = seed;
+	HeightGenerator::seed = seed;
 	srand(seed);
 	this->xOffset = gridX * (vertexCount - 1);
 	this->zOffset = gridZ * (vertexCount - 1);
@@ -31,10 +32,6 @@ float HeightGenerator::generateHeight(float x, float z)
 		total += getInterpolatedNoise((x + xOffset) * freq, (z + zOffset) * freq) * amp;
 	}
 	return total;
-	/*
-	float res = getInterpolatedNoise(x/4.0f, z/4.0f) * AMPLITUDE;
-	return res;
-	*/
 }
 
 float HeightGenerator::getInterpolatedNoise(float x, float z)
@@ -74,10 +71,14 @@ float HeightGenerator::getSmoothNoise(int x, int z)
 
 float HeightGenerator::getNoise(int x, int z)
 {
-	srand(x * 29484 + z * 472915 + seed);
+	/*
+	HeightGenerator::seed = x * 294884 + z * 4723915 + HeightGenerator::getSeed();
+	srand(HeightGenerator::seed);
+	*/
+	srand(x * 294884 + z * 4723915 + HeightGenerator::seed);
 	return (float)rand() / RAND_MAX * 2.0f - 1.0f;
 }
 
 int HeightGenerator::getSeed() {
-	return this->seed;
+	return HeightGenerator::seed;
 }

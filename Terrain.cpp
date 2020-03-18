@@ -14,7 +14,7 @@ using namespace std;
 #define DRAW_WIREFRAME 1
 #define SCENE_MODE 0
 
-Terrain::Terrain(int x_d, int z_d, const char* terrain, const char* height_map)
+Terrain::Terrain(int x_d, int z_d, const char* terrain)
 {
 	//Setup the terrain.
 	this->x = x_d * SIZE;
@@ -52,9 +52,9 @@ void Terrain::setupHeightMap()
 		for (int j = 0; j < VERTEX_COUNT; j++)
 		{
 			//Setup the vertices.
-			float vertex_x = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
-			float vertex_z = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
-			float vertex_y = hg.generateHeight(vertex_x / 4.0f, vertex_z / 4.0f);
+			float vertex_x = ((float)j / ((float)VERTEX_COUNT - 1) * SIZE) - (SIZE / 2.0f);
+			float vertex_z = ((float)i / ((float)VERTEX_COUNT - 1) * SIZE) - (SIZE / 2.0f);
+			float vertex_y = hg.generateHeight(vertex_x / 4.0f, vertex_z / 4.0f) - 20.0f;
 			//float vertex_y = getHeight(vec3(vertex_x, 0.0f, vertex_z));
 			//float vertex_y = 0.0f;
 			//cout << vertex_y << endl;
@@ -263,10 +263,19 @@ void Terrain::diamond_square(int x1, int x2, int y1, int y2, int level, float ra
 	diamond_square(x1, x2, y1, y2, level / 2, range / 2);
 }
 
+void Terrain::updateHeights() {
+	time_t currTime = time(nullptr);
+	HeightGenerator hg = HeightGenerator(currTime * 18403481 % 421321);
+	cout << "generator seed = " << hg.getSeed() << endl;
+	for (int i = 0; i < vertices.size(); i++) {
+		vertices[i].y = hg.generateHeight(vertices[i].x, vertices[i].z);
+	}
+	//updateNormals();
+}
+
 /* Updates the normals for the entire terrain. */
 void Terrain::updateNormals()
 {
-	cout << "size: " << vertices.size() << "     vc: " << VERTEX_COUNT << endl;
 	for (int i = 0; i < VERTEX_COUNT; i++)
 	{
 		for (int j = 0; j < VERTEX_COUNT; j++)
@@ -320,15 +329,6 @@ void Terrain::updateMaxMinHeight()
 	//Set the max and min heights found.
 	this->max_height = max;
 	this->min_height = min;
-}
-
-void Terrain::updateHeights() {
-	time_t currTime = time(nullptr);
-	HeightGenerator hg = HeightGenerator(currTime % 421321);
-	for (int i = 0; i < vertices.size(); i++) {
-		vertices[i].y = hg.generateHeight(vertices[i].x, vertices[i].z);
-	}
-	updateNormals();
 }
 
 /** Load a ppm file from disk.

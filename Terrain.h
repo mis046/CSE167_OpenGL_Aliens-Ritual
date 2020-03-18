@@ -32,7 +32,6 @@ private:
 	//Load and setup the textures and heightmaps.
 	unsigned char * loadPPM(const char* filename, int& width, int& height);
 	GLuint loadTerrain(const char* filename, int index);
-	void setupTerrain(const char* terrain_0, const char* terrain_1, const char* terrain_2, const char* terrain_3, const char* blend_map);
 	void setupTerrain(const char* terrain);
 	//Misc.
 	float BaryCentric(glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec2 pos);
@@ -40,7 +39,7 @@ private:
 
 public:
 	//Constructor methods.
-	Terrain(int x_d, int z_d, const char* terrain, const char* height_map);
+	Terrain(int x_d, int z_d, const char* terrain);
 	~Terrain();
 	//Determine the terrain's position in the world.
 	float x, z;

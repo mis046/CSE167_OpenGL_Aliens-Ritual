@@ -6,7 +6,6 @@
 #include "Window.h"
 #include "Definitions.h"
 #include "Terrain.h"
-#include "Water.h"
 #include "Particle.h"
 
 class Scenery
@@ -19,14 +18,12 @@ private:
 	GLuint skybox;
 	//Access elements from the scenery class.
 	std::vector<Terrain*> terrains;
-	std::vector<Water*> waters;
 	std::vector<Particle*> particles;
 	//Terrains
 	void generateTerrains();
 	void stitchTerrains();
 	int getTerrain(glm::vec3 position);
 	//Water
-	void generateWater();
 
 public:
 	//Constructor methods.
@@ -39,7 +36,6 @@ public:
 	void toggleDrawMode();
 
 	void draw_terrain(GLuint shaderProgram);
-	void draw_water(GLuint shaderProgram);
 	void updateTerrainHeights();
 };
 #endif
