@@ -8,10 +8,10 @@
  */
 namespace
 {
-    bool toonShadingOn = false;
+    bool toonShadingOn = true;
     bool particleOn = true;
 
-    int particleNumber = 500;
+    int particleNumber = 200;
     const float cameraSpeed = 0.05f; // adjust accordingly
 
     int nextP = 0;
@@ -324,10 +324,10 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
        
     
-    for (unsigned int i = 0; i < particleNumber; i++) {
-        // Always up. left/right, up/down, in/out
-        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
-    }
+//    for (unsigned int i = 0; i < particleNumber; i++) {
+//        // Always up. left/right, up/down, in/out
+//        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+//    }
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -445,6 +445,9 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 
 void Window::idleCallback()
 {
+    if (particles.size() < particleNumber) {
+        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
+    }
     for (Particle * p : particles) {
         p->update();
         // Check if need to remove it and replace with a new one
