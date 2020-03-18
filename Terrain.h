@@ -49,6 +49,7 @@ public:
 	void toggleDrawMode();
 	void draw(GLuint shaderProgram);
 	void update();
+	void updateHeights();
 	//Keep track of surrounding terrains to stitch them together.
 	Terrain * terrain_top;
 	Terrain * terrain_bottom;

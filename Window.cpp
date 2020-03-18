@@ -517,6 +517,9 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                     program = toonShader;
                 toonShadingOn = !toonShadingOn;
                 break;
+            case GLFW_KEY_H:
+                scenery->updateTerrainHeights();
+                break;
             default:
                 break;
             }

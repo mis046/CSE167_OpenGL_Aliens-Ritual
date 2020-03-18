@@ -148,6 +148,10 @@ int Scenery::getTerrain(glm::vec3 position)
 	return (terrain_z*width + terrain_x);
 }
 
+void Scenery::updateTerrainHeights() {
+	for (Terrain* t : terrains) { t->updateHeights(); }
+}
+
 /* Return the height for the given terrain (given position in the world). */
 float Scenery::getHeight(glm::vec3 position)
 {

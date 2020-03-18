@@ -7,7 +7,7 @@
 
 HeightGenerator::HeightGenerator(int seed)
 {
-	this->seed = rand() % 10000000 + seed;
+	this->seed = seed;
 	srand(seed);
 	this->xOffset = 0;
 	this->zOffset = 0;
@@ -47,9 +47,9 @@ float HeightGenerator::getInterpolatedNoise(float x, float z)
 	//cout << fracX << "\t" << fracZ << endl;
 	
 	float v1 = getSmoothNoise(intX, intZ);
-	float v2 = getSmoothNoise(intX + 4, intZ);
-	float v3 = getSmoothNoise(intX, intZ + 4);
-	float v4 = getSmoothNoise(intX + 4, intZ + 4);
+	float v2 = getSmoothNoise(intX + 1, intZ);
+	float v3 = getSmoothNoise(intX, intZ + 1);
+	float v4 = getSmoothNoise(intX + 1, intZ + 1);
 	float i1 = interpolate(v1, v2, fracX);
 	float i2 = interpolate(v3, v4, fracX);
 	return interpolate(i1, i2, fracZ);
@@ -65,8 +65,8 @@ float HeightGenerator::interpolate(float a, float b, float blend)
 
 float HeightGenerator::getSmoothNoise(int x, int z)
 {
-	float corners = (getNoise(x - 4, z - 4) + getNoise(x + 4, z - 4) + getNoise(x - 4, z + 4) + getNoise(x + 4, z + 4)) / 16.0f;
-	float sides = (getNoise(x - 4, z) + getNoise(x + 4, z) + getNoise(x, z - 4) + getNoise(x, z + 4)) / 8.0f;
+	float corners = (getNoise(x - 1, z - 1) + getNoise(x + 1, z - 1) + getNoise(x - 1, z + 1) + getNoise(x + 1, z + 1)) / 16.0f;
+	float sides = (getNoise(x - 1, z) + getNoise(x + 1, z) + getNoise(x, z - 1) + getNoise(x, z + 1)) / 8.0f;
 	float center = getNoise(x, z) / 4.0f;
 	//cout << "x: " << x << ", z: " << z << ", height: " << corners + sides + center << endl;
 	return corners + sides + center;

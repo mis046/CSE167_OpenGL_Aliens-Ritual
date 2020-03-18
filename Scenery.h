@@ -40,5 +40,6 @@ public:
 
 	void draw_terrain(GLuint shaderProgram);
 	void draw_water(GLuint shaderProgram);
+	void updateTerrainHeights();
 };
 #endif

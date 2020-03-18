@@ -2,6 +2,7 @@
 #include "HeightGenerator.h"
 #include <time.h>
 #include <math.h>
+#include <ctime>
 
 using namespace std;
 
@@ -41,7 +42,8 @@ Terrain::~Terrain()
 /* Setup a default flat terrain. */
 void Terrain::setupHeightMap()
 {
-	HeightGenerator hg = HeightGenerator(rand() % 421321);
+	time_t currTime = time(nullptr);
+	HeightGenerator hg = HeightGenerator(currTime % 421321);
 	//cout << hg.getSeed() << endl;
 	//Create the height map: v, vn, texCoords
 	//Generate vertices, normals, and texCoords for a terrain map. vertex = (j, i).
@@ -52,7 +54,7 @@ void Terrain::setupHeightMap()
 			//Setup the vertices.
 			float vertex_x = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
 			float vertex_z = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
-			float vertex_y = hg.generateHeight(vertex_x, vertex_z);
+			float vertex_y = hg.generateHeight(vertex_x / 4.0f, vertex_z / 4.0f);
 			//float vertex_y = getHeight(vec3(vertex_x, 0.0f, vertex_z));
 			//float vertex_y = 0.0f;
 			//cout << vertex_y << endl;
@@ -97,11 +99,6 @@ void Terrain::setupHeightMap()
 		container.texCoord = texCoords[i];
 		containers.push_back(container);
 	}
-	/*
-	for (int i = 0; i < vertices.size(); i++) {
-		vertices[i].y = getHeight(vertices[i]);
-	}
-	*/
 }
 
 /* Setup the terrain based on loaded height map. */
@@ -281,7 +278,6 @@ void Terrain::updateNormals()
 			float heightD = getHeightFromVertex(j, i + 1);
 			float heightU = getHeightFromVertex(j, i - 1);
 			//Check if we're at the left edge.
-			/*
 			if (j == 0 && (terrain_left != nullptr)) {
 				heightL = terrain_left->getHeightFromVertex((VERTEX_COUNT - 1), i);
 			}
@@ -297,7 +293,6 @@ void Terrain::updateNormals()
 			if (i == (VERTEX_COUNT - 1) && (terrain_bottom != nullptr)) {
 				heightD = terrain_bottom->getHeightFromVertex(j, 0);
 			}
-			*/
 			//Update the normal.
 			glm::vec3 normal = glm::normalize(glm::vec3(heightL - heightR, 2.0f, heightU - heightD));
 			this->normals[(i*VERTEX_COUNT) + j] = normal;
@@ -325,6 +320,15 @@ void Terrain::updateMaxMinHeight()
 	//Set the max and min heights found.
 	this->max_height = max;
 	this->min_height = min;
+}
+
+void Terrain::updateHeights() {
+	time_t currTime = time(nullptr);
+	HeightGenerator hg = HeightGenerator(currTime % 421321);
+	for (int i = 0; i < vertices.size(); i++) {
+		vertices[i].y = hg.generateHeight(vertices[i].x, vertices[i].z);
+	}
+	updateNormals();
 }
 
 /** Load a ppm file from disk.
