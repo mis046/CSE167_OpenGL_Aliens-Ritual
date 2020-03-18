@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 
+#include "Window.h"
 
 using namespace std;
 
@@ -120,7 +121,6 @@ public:
     
     // have a class method which draws the 3D model associated with this node
     void draw(glm::mat4 C) {
-//        cout << "draw called" << "\n";
         this->C = C;
         glUseProgram(*shaderProgram);
         
