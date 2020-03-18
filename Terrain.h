@@ -9,11 +9,6 @@ class Terrain
 {
 private:
 	//Determine the textures mapped to the terrain, using a blend map.
-	GLuint terrainTexture_0;
-	GLuint terrainTexture_1;
-	GLuint terrainTexture_2;
-	GLuint terrainTexture_3;
-	GLuint blendMap;
 	GLuint terrainTexture;
 	//Variables to keep track of information.
 	std::vector<Container> containers;//[v, vn, (s,t)]
@@ -45,8 +40,6 @@ private:
 
 public:
 	//Constructor methods.
-	//Terrain(int x_d, int z_d, const char* terrain_0, const char* terrain_1, const char* terrain_2, const char* terrain_3, const char* blend_map);
-	Terrain(int x_d, int z_d, const char* terrain_0, const char* terrain_1, const char* terrain_2, const char* terrain_3, const char* blend_map, const char* height_map);
 	Terrain(int x_d, int z_d, const char* terrain, const char* height_map);
 	~Terrain();
 	//Determine the terrain's position in the world.

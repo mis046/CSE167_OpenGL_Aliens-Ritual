@@ -238,9 +238,7 @@ bool Window::initializeObjects()
         particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
     }
 
-    cout << "\tREACHED #1 Window" << endl;
-    scenery = new Scenery(2, 2, ((Cube*)skybox)->cubemapTexture);
-    cout << "\tREACHED #2 Window" << endl;
+    scenery = new Scenery(1, 1, ((Cube*)skybox)->cubemapTexture);
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);

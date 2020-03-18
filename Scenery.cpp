@@ -48,9 +48,10 @@ void Scenery::generateTerrains()
 			std::string string_blend = "src/terrain/blend_maps/blend_map_" + std::to_string((width*i) + j + 1) + ".ppm";
 			const char* file_names_blend = string_blend.c_str();
 			//std::string string_height = "src/terrain/height_maps/height_map_" + std::to_string((width*i) + j + 1) + ".ppm";
-			std::string string_height = "src/terrain/height_maps/height_map_20.ppm";
+			std::string string_height = "src/terrain/height_maps/height_map_12.ppm";
 			const char* file_names_height = string_height.c_str();
-			//Terrain * cur_terrain = new Terrain(j, i, "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", "src/terrain/texture_3.ppm", file_names_blend, file_names_height);
+			//Terrain * cur_terrain = new Terrain(j, i, "sample.ppm", file_names_height);
+			//Terrain * cur_terrain = new Terrain(j, i, "src/terrain/texture_3.ppm", file_names_height);
 			Terrain * cur_terrain = new Terrain(j, i, "src/marslike01dn.ppm", file_names_height);
 			terrains.push_back(cur_terrain);
 		}
