@@ -1,14 +1,18 @@
 #include "Window.h"
 #include "Geometry.hpp"
 #include "Particle.h"
+#include "Scenery.h"
 
 /* 
  * Declare your variables below. Unnamed namespace is used here to avoid 
  * declaring global or static variables.
  */
+bool Window::toonShadingOn = true;
+glm::vec3 Window::camera_pos(0, 5 ,20);
+glm::mat4 Window::P;
+glm::mat4 Window::V;
 namespace
 {
-    bool toonShadingOn = true;
     bool particleOn = true;
 
     int particleNumber = 200;
@@ -46,6 +50,7 @@ namespace
 
 	GLuint program; // The shader program id.
     GLuint skyboxProgram;
+    GLuint terrainProgram;
     GLuint particleShader;
     GLuint phongShader;
     GLuint toonShader;
@@ -72,6 +77,9 @@ GLuint bloomOffShaderFinal;
     float lastX, lastY;
     float yawW = -90, pitchW;
 
+
+    Scenery* scenery;
+
     unsigned int attachments[2];
 
     // For blurring
@@ -86,6 +94,7 @@ GLuint bloomOffShaderFinal;
 
     bool bloomOn = true;
     bool showOffScreen = false;
+
 };
 
 bool Window::initializeProgram()
@@ -94,6 +103,7 @@ bool Window::initializeProgram()
     phongShader = LoadShaders("src/phongShader.vert", "src/phongShader.frag");
     toonShader = LoadShaders("src/toonShader.vert", "src/toonShader.frag");
     skyboxProgram = LoadShaders("src/skybox.vert", "src/skybox.frag");
+    terrainProgram = LoadShaders("src/terrain.vert", "src/terrain.frag");
     particleShader = LoadShaders("src/particleShader.vert", "src/particleShader.frag");
     
     if (toonShadingOn)
@@ -119,6 +129,7 @@ bool Window::initializeProgram()
 	// Activate the shader program.
     glUseProgram(program);
     view = glm::lookAt(eye, eye + getCameraFront(), up);
+    V = view;
     
     // FBO
     glGenFramebuffers(1, &framebuffer);
@@ -327,10 +338,14 @@ bool Window::initializeObjects()
         linePoints.push_back(v);
        
     
+
+    scenery = new Scenery(1, 1, ((Cube*)skybox)->cubemapTexture);
+
 //    for (unsigned int i = 0; i < particleNumber; i++) {
 //        // Always up. left/right, up/down, in/out
 //        particles.push_back(new Particle(particleSize, particleShader, randLife(), randV(), gravity, duck->getPos()));
 //    }
+
     
     glUseProgram(skyboxProgram);
     glUniform1i(glGetUniformLocation(skyboxProgram, "skybox"), 0);
@@ -442,8 +457,10 @@ void Window::resizeCallback(GLFWwindow* window, int w, int h)
 	glViewport(0, 0, width, height);
 
 	// Set the projection matrix.
-	projection = glm::perspective(glm::radians(fovy),
-		(float)width / (float)height, near, far);
+	projection = glm::perspective(glm::radians(fovy), (float)width / (float)height, near, far);
+    view = glm::lookAt(eye, eye + getCameraFront(), up);
+    P = projection;
+    V = view;
 }
 
 void Window::idleCallback()
@@ -483,6 +500,9 @@ void Window::render() {
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(skyboxProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
     skybox->draw();
+
+    glUseProgram(terrainProgram);
+    scenery->draw_terrain(terrainProgram);
 
     glUseProgram(program);
 
@@ -549,8 +569,18 @@ void Window::displayCallback(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
     }
+    /*
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        float changeY = GLFW_MOD_SHIFT ? -0.5f : 0.5f;
+        eye += vec3(0.0f, changeY, 0.0f);
+    }
+    */
+    camera_pos = eye;
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
+
+    V = view;
+
     
 	// Clear the color and depth buffers.
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -645,6 +675,7 @@ void Window::displayCallback(GLFWwindow* window)
     
 //    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
 
+
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
@@ -666,6 +697,12 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 //                case GLFW_KEY_X:
 //                    alienArmy->scaleUp();
                     break;
+                case GLFW_KEY_SPACE:
+					eye += vec3(0.0f, -10.0f, 0.0f);
+					camera_pos = eye;
+					view = glm::lookAt(eye, eye + getCameraFront(), up);
+					V = view;
+                    break;
                 default:
                     break;
             }
@@ -673,6 +710,12 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
         else {
             switch (key)
             {
+			case GLFW_KEY_SPACE:
+				eye += vec3(0.0f, 10.0f, 0.0f);
+				camera_pos = eye;
+				view = glm::lookAt(eye, eye + getCameraFront(), up);
+				V = view;
+				break;
             case GLFW_KEY_ESCAPE:
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);
@@ -704,6 +747,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                     program = toonShader;
                 toonShadingOn = !toonShadingOn;
                 break;
+            case GLFW_KEY_H:
+                scenery->updateTerrainHeights();
+				glUseProgram(terrainProgram);
+				scenery->draw_terrain(terrainProgram);
             case GLFW_KEY_B:
                 bloomOn = !bloomOn;
                 break;
