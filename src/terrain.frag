@@ -2,23 +2,15 @@
 
 uniform vec3 lightColor;
 uniform vec3 viewPos;
-uniform samplerCube skybox;
-uniform float reflect_intensity;
 
 uniform sampler2D TerrainTexture;
 
-uniform float max_height;
-uniform float min_height;
 uniform bool toon_shade;
 
-//Define any in variables from the vertex shader.
 in vec3 FragPos;
 in vec3 FragNormal;
 in vec2 FragTexCoords;
 
-//Define out variable for the fragment shader: color.
-//out vec4 color;
-//layout (location = 0) out vec4 fragColor;
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec4 brightColor;
 
@@ -73,7 +65,7 @@ void main()
 		}
 	}
     brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-    if(brightness > 0.1)
+    if(brightness > 0.075)
         brightColor = vec4(color.rgb, 1.0);
     else
         brightColor = vec4(0.0, 0.0, 0.0, 1.0);
