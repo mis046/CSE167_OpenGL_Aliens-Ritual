@@ -116,9 +116,6 @@ bool Window::initializeProgram()
     bloomShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomFinal.frag");
     bloomOffShaderFinal = LoadShaders("src/bloomFinal.vert", "src/bloomOffFinal.frag");
 
-//    bloomOffShaderFinal = LoadShaders("src/bloomOffFinal.vert", "src/bloomOffFinal.frag");
-
-    
 	// Check the shader program.
 	if (!program || !skyboxProgram || !particleShader || !toonShader || ! phongShader || !blurShader || !bloomShaderFinal)
 	{
@@ -159,14 +156,11 @@ bool Window::initializeProgram()
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer0, 0);
         else
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, texColorBuffer1, 0);
-//        glBindTexture(GL_TEXTURE_2D, 0);
     }
-//    glBindTexture(GL_TEXTURE_2D, 0);
 
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-//    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     
     // Complete framebuffer
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
@@ -209,9 +203,7 @@ bool Window::initializeProgram()
     glUniform1i(glGetAttribLocation(blurShader, "image"), 0);
     
     glUseProgram(bloomShaderFinal);
-//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "scene"), 0);
-//    glUniform1i(glGetAttribLocation(bloomShaderFinal, "bloomBlur"), 1);
-//
+
     return true;
 }
 
@@ -470,7 +462,6 @@ void Window::idleCallback()
         }
     }
 	// Perform any updates as necessary. 
-//	skybox->update();
     
     // Alien Dancing
     for (Transform* t : moveL) {
@@ -515,8 +506,6 @@ void Window::render() {
         for (Particle * p : particles)
             p->draw(projection, view);
     }
-    
-    //    lines->draw(mat4(1.0f));
 }
 
 void Window::renderQuad()
@@ -562,12 +551,6 @@ void Window::displayCallback(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         eye += glm::normalize(glm::cross(cameraFront, up)) * cameraSpeed;
     }
-    /*
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        float changeY = GLFW_MOD_SHIFT ? -0.5f : 0.5f;
-        eye += vec3(0.0f, changeY, 0.0f);
-    }
-    */
     camera_pos = eye;
 
     view = glm::lookAt(eye, eye + getCameraFront(), up);
@@ -583,34 +566,29 @@ void Window::displayCallback(GLFWwindow* window)
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-//    glEnable(GL_DEPTH_TEST);
-    
     // RENDER EVERYTHING into framebuffer
     render();
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // Blur
-     bool horizontal = true, first_iteration = true;
-     
+    bool horizontal = true, first_iteration = true;
+    int amount = 1;
+    if (bloomOn) amount = 10;
     
-     int amount = 1;
-    
-     if (bloomOn) amount = 10;
-    
-     glUseProgram(blurShader);
-     for (unsigned int i = 0; i < amount; i++)
-     {
-         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
-         glUniform1i(glGetUniformLocation(blurShader, "horizontal"), horizontal);
-         glBindTexture(
-             GL_TEXTURE_2D, first_iteration ? texColorBuffer1 : pingpongBuffer[!horizontal]
-         );
-         renderQuad();
-         horizontal = !horizontal;
-         if (first_iteration)
-             first_iteration = false;
-     }
+    glUseProgram(blurShader);
+    for (unsigned int i = 0; i < amount; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+        glUniform1i(glGetUniformLocation(blurShader, "horizontal"), horizontal);
+        glBindTexture(
+            GL_TEXTURE_2D, first_iteration ? texColorBuffer1 : pingpongBuffer[!horizontal]
+        );
+        renderQuad();
+        horizontal = !horizontal;
+        if (first_iteration)
+            first_iteration = false;
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     
     // second pass
@@ -623,13 +601,8 @@ void Window::displayCallback(GLFWwindow* window)
         glDisable(GL_DEPTH_TEST);
 
         // Testing
-        // Draw the normal
-        //    glBindTexture(GL_TEXTURE_2D, texColorBuffer0);
-        // Draw the highlightmap
         glBindTexture(GL_TEXTURE_2D, texColorBuffer1);
-        // Draw the blur
-        //    glBindTexture(GL_TEXTURE_2D, pingpongBuffer[1]);
-            renderQuad();
+		renderQuad();
     }
     
     else {
@@ -664,10 +637,6 @@ void Window::displayCallback(GLFWwindow* window)
         
         renderQuad();
     }
-    
-    
-//    std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
-
 
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -677,19 +646,15 @@ void Window::displayCallback(GLFWwindow* window)
 
 void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	/*
-	 * TODO: Modify below to add your key callbacks.
-	 */
-
 	 // Check for a key press.
 	if (action == GLFW_PRESS)
 	{
         // Uppercase key presses (shift held down + key press)
         if (mods == GLFW_MOD_SHIFT) {
             switch (key) {
-//                case GLFW_KEY_X:
-//                    alienArmy->scaleUp();
-                    break;
+                //case GLFW_KEY_X:
+                    //alienArmy->scaleUp();
+                    //break;
                 case GLFW_KEY_SPACE:
 					eye += vec3(0.0f, -10.0f, 0.0f);
 					camera_pos = eye;
@@ -713,9 +678,9 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 // Close the window. This causes the program to also terminate.
                 glfwSetWindowShouldClose(window, GL_TRUE);
                 break;
-//            case GLFW_KEY_X:
-//                alienArmy->scaleDown();
-//                break;
+            //case GLFW_KEY_X:
+                //alienArmy->scaleDown();
+                //break;
             case GLFW_KEY_P:
                 if (particleOn) {
                     // Delete particles
@@ -741,11 +706,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
                 toonShadingOn = !toonShadingOn;
                 break;
             case GLFW_KEY_H:
-                /*
-                scenery->updateTerrainHeights();
-				glUseProgram(terrainProgram);
-				scenery->draw_terrain(terrainProgram);
-                */
 				glUseProgram(terrainProgram);
                 scenery->generateTerrains();
                 break;
@@ -763,9 +723,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    // cout << "button " << button << " action " << action << " mods " << mods << "\n";
-    // Button: 0 left click, 1 right click
-    // Action: 1 press down, 0 release
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) {
             mouseLeftPressed = true;
@@ -773,17 +730,6 @@ void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int
         else if (action == GLFW_RELEASE)
             mouseLeftPressed = false;
     }
-    // Disable right click
-//     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-//        if (action == GLFW_PRESS) {
-//            mouseRightPressed = true;
-//            pressedX = cursorX;
-//            pressedY = cursorY;
-//            lastPoint = trackBallMapping(pressedX, pressedY);
-//        }
-//        else if (action == GLFW_RELEASE)
-//            mouseRightPressed = false;
-//    }
 }
 
 void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -819,9 +765,6 @@ void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         // Rotate about the axis that is perpendicular to the great circle connecting the mouse movements.
         glm::vec3 rotAxis;
         rotAxis = cross( lastPoint, curPoint );
-//        cout << lastPoint.x << " " << lastPoint.y << " " << lastPoint.z << "\n";
-//        cout << curPoint.x << " " << curPoint.y << " " << curPoint.z << "\n";
-//        cout << "\n";
         
         float rot_angle = velocity * m_ROTSCALE;
         

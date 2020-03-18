@@ -40,8 +40,6 @@ float HeightGenerator::getInterpolatedNoise(float x, float z)
 	int intZ = (int)z;
 	float fracX = x - intX;
 	float fracZ = z - intZ;
-	//cout << x << "\t" << z << endl;
-	//cout << fracX << "\t" << fracZ << endl;
 	
 	float v1 = getSmoothNoise(intX, intZ);
 	float v2 = getSmoothNoise(intX + 1, intZ);
@@ -56,7 +54,6 @@ float HeightGenerator::interpolate(float a, float b, float blend)
 {
 	float theta = blend * PI;
 	float f = (float)(1.0f - cos(theta)) * 0.5f;
-	//cout << "f: " << f << endl;
 	return a * (1.0f - f) + b * f;
 }
 
@@ -65,16 +62,11 @@ float HeightGenerator::getSmoothNoise(int x, int z)
 	float corners = (getNoise(x - 1, z - 1) + getNoise(x + 1, z - 1) + getNoise(x - 1, z + 1) + getNoise(x + 1, z + 1)) / 16.0f;
 	float sides = (getNoise(x - 1, z) + getNoise(x + 1, z) + getNoise(x, z - 1) + getNoise(x, z + 1)) / 8.0f;
 	float center = getNoise(x, z) / 4.0f;
-	//cout << "x: " << x << ", z: " << z << ", height: " << corners + sides + center << endl;
 	return corners + sides + center;
 }
 
 float HeightGenerator::getNoise(int x, int z)
 {
-	/*
-	HeightGenerator::seed = x * 294884 + z * 4723915 + HeightGenerator::getSeed();
-	srand(HeightGenerator::seed);
-	*/
 	srand(x * 294884 + z * 4723915 + HeightGenerator::seed);
 	return (float)rand() / RAND_MAX * 2.0f - 1.0f;
 }
